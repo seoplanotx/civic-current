@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# Civic Current
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A 3D civic-themed city-building game that runs in the browser. Shape a city
+tile by tile, balance its systems against unfolding events, and grow it across
+distinct themed eras.
 
-Currently, two official plugins are available:
+Built with React 19, Three.js, and TypeScript on Vite, with optional accounts
+(Clerk), cloud saves and entitlements (Vercel KV), and one-time purchases
+(Stripe). The app **degrades gracefully** — with no keys configured it runs in
+anonymous, local-save-only mode.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech stack
 
-## React Compiler
+| Area      | Tech                                              |
+| --------- | ------------------------------------------------- |
+| UI        | React 19, Tailwind CSS v4, `lucide-react` icons   |
+| 3D        | Three.js (custom scene, meshes, particle systems) |
+| State     | Zustand                                           |
+| Build     | Vite 8, TypeScript                                |
+| Auth      | Clerk (anonymous play supported)                  |
+| Backend   | Vercel serverless functions (`api/`)              |
+| Storage   | Vercel KV (entitlements + cloud saves)            |
+| Payments  | Stripe Checkout (premium unlock + content packs)  |
+| Tests     | Vitest                                            |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project layout
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+api/                Vercel serverless functions (checkout, webhook, cloud-save, entitlements)
+src/
+  engine/           Simulation + map generation (the game's core loop)
+  three/            Three.js scene, building models, tile mesh, particles
+  content/          Content registry + packs (base, post-carbon, throwback-era, tomorrows-city)
+  config/           Buildings, events, terrain config
+  store/            Zustand game store
+  components/        UI panels, HUD, shop, account menu
+  auth/             Clerk provider + authenticated API client
+  billing/          Stripe checkout flows
+  cloud-save/       Cloud save service
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev          # Vite dev server (frontend only)
 ```
+
+The frontend runs without any environment variables (anonymous, local-save
+mode). To exercise the API routes (`api/`) locally, run them with the Vercel
+CLI, which serves the serverless functions:
+
+```bash
+vercel dev
+```
+
+### Environment variables
+
+Copy the template and fill in what you need — every integration is optional:
+
+```bash
+cp .env.example .env.local
+```
+
+- **No Clerk key** → anonymous mode, local-save only, no purchases
+- **No Stripe key** → `/api/checkout` returns 500; the upgrade modal surfaces the error
+- **No KV creds** → entitlements don't persist; cloud save falls back to local
+
+See [`.env.example`](.env.example) for the full list and where each value comes from.
+
+## Scripts
+
+| Command           | Description                          |
+| ----------------- | ------------------------------------ |
+| `npm run dev`     | Start the Vite dev server            |
+| `npm run build`   | Type-check (`tsc -b`) and build       |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint`    | Run ESLint                           |
+| `npx vitest`      | Run the test suite                   |
+
+## Deployment
+
+See [README-DEPLOYMENT.md](README-DEPLOYMENT.md) for the full guide to
+deploying on Vercel with Clerk, Stripe, and Vercel KV.
