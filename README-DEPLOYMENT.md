@@ -34,8 +34,14 @@ core + one-time premium unlock) in production on Vercel.
 5. Set up a **webhook** pointing to `https://YOUR-DOMAIN.vercel.app/api/webhook/stripe`
    - Events to send:
      - `checkout.session.completed`
+     - `checkout.session.async_payment_succeeded` (delayed-payment methods)
      - `charge.refunded`
+     - `customer.subscription.updated` (Mayor's Office lifecycle)
+     - `customer.subscription.deleted` (Mayor's Office cancellation)
+     - `invoice.payment_failed` (Mayor's Office past-due flag)
    - Copy the **signing secret** → `STRIPE_WEBHOOK_SECRET`
+   - **Important:** without the three subscription events, a Mayor's Office
+     subscription would never reflect cancellation or lapse in-app.
 6. **Use test mode** until you've verified the full flow end-to-end. Stripe's
    `4242 4242 4242 4242` test card always succeeds; `4000 0000 0000 9995`
    simulates an insufficient-funds decline.
@@ -63,6 +69,46 @@ needed (one generic `/api/checkout/pack` endpoint serves every pack).
 > and the webhook revokes the matching entitlement automatically. This only
 > works for purchases made after this was wired up — older charges that lack
 > the metadata won't auto-revoke.
+
+#### Cosmetic themes (the in-game Themes shop)
+
+The **Themes** button (top-right) sells one-time terrain re-color themes.
+Like packs, each maps to a Stripe Price env var (see
+[`src/content/cosmetics/catalog.ts`](src/content/cosmetics/catalog.ts)):
+
+| Theme | Stripe product (suggested) | Env var |
+| --- | --- | --- |
+| Noir City | `Civic Current — Noir City`, one-time $2.99 | `STRIPE_PRICE_COSMETIC_NOIR` |
+| Vaporwave | `Civic Current — Vaporwave`, one-time $2.99 | `STRIPE_PRICE_COSMETIC_VAPORWAVE` |
+| Solarpunk | `Civic Current — Solarpunk`, one-time $2.99 | `STRIPE_PRICE_COSMETIC_SOLARPUNK` |
+
+Themes are purchased (`/api/checkout/cosmetic`), then **equipped**
+(`/api/cosmetics/equip`) — equipping re-colors the 3D board live. Mayor's
+Office subscribers get every theme without buying. Refunds revoke ownership
+(and un-equip if the refunded theme was active) via the same
+`charge.refunded` path.
+
+#### Mayor's Office subscription (recurring)
+
+The Mayor's Office is a **recurring** subscription (opened from the account
+menu). It grants 5 city slots and every cosmetic theme while active.
+
+1. In Stripe **Products**, create `Civic Current — Mayor's Office` with a
+   **recurring** price (e.g. $4.99 / month).
+2. Copy the recurring price ID → `STRIPE_PRICE_MAYORS_OFFICE`.
+   (This MUST be a recurring price; a one-time price will fail the
+   `mode: 'subscription'` checkout.)
+3. Under **Settings → Billing → Customer portal**, enable the **Customer
+   Portal** so `/api/billing/portal` can create management sessions
+   (subscribers use "Manage billing" to update payment or cancel).
+4. Ensure the three subscription webhook events (step 5 above) are enabled —
+   `customer.subscription.updated/deleted` keep `hasSubscription` in sync, and
+   `invoice.payment_failed` flags `past_due`.
+
+The webhook reconciles out-of-order Stripe deliveries: lifecycle events that
+reference a subscription the user has already replaced are ignored, and
+`customer.subscription.updated` (carrying the authoritative status) is the
+source of truth for turning perks on/off.
 
 ### 3. Vercel KV
 
@@ -162,17 +208,22 @@ secret in `.env.local` for `STRIPE_WEBHOOK_SECRET` while testing.
 | Shop shows "Purchases unavailable" | `VITE_CLERK_PUBLISHABLE_KEY` not set | Purchases need auth; add the Clerk key |
 | Upgrade modal: "Server missing STRIPE_PRICE_..." | Price env var unset | Add `STRIPE_PRICE_PREMIUM_UNLOCK` |
 | Shop Buy: "Server missing STRIPE_PRICE_PACK_..." | Pack price env var unset | Add the pack's `STRIPE_PRICE_PACK_*` var |
+| Theme Buy: "Server missing STRIPE_PRICE_COSMETIC_..." | Cosmetic price env var unset | Add the theme's `STRIPE_PRICE_COSMETIC_*` var |
+| Subscribe: "Server missing STRIPE_PRICE_MAYORS_OFFICE" | Sub price env var unset | Add a **recurring** price to `STRIPE_PRICE_MAYORS_OFFICE` |
+| "Manage billing" 400 / no portal | Customer Portal not enabled | Enable it in Stripe → Settings → Billing → Customer portal |
+| Subscription never cancels/lapses in-app | Subscription webhook events not enabled | Add `customer.subscription.updated/deleted` + `invoice.payment_failed` |
 | Upgrade modal: "401 Authentication required" | User not signed in | Click "Sign in to purchase" |
 | Webhook 400 with "signature verification failed" | Wrong webhook secret | Re-copy from Stripe dashboard |
 | Refund didn't revoke access | Charge predates `payment_intent_data` metadata | Only affects charges made before the fix; revoke manually in KV |
 | Cloud save returns 401 in console | Token getter returning null | Clerk session expired; sign in again |
 | Slots list empty after upgrade | KV not provisioned | Connect Vercel KV to the project |
+| Equipped theme doesn't recolor board | Entitlements not refreshed | Reload; AuthBridge re-fetches entitlements on auth/session change |
 
 ## Phase-by-phase roadmap
 
 Phase 0 (✅ shipped) — content-pack architecture
 Phase 1 (✅ shipped) — auth, premium unlock, cloud save
 Phase 2 (✅ shipped) — paid content packs (Throwback Era, Tomorrow's City) + in-game Shop
-Phase 3 — cosmetic theme shop
-Phase 4 — Mayor's Office subscription
+Phase 3 (✅ shipped) — cosmetic theme shop (Noir, Vaporwave, Solarpunk)
+Phase 4 (✅ shipped) — Mayor's Office subscription
 Phase 5 — community scenario workshop

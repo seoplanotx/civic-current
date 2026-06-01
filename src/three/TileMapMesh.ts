@@ -125,7 +125,10 @@ export class TileMapMesh {
         });
         
         tileMesh = new THREE.Mesh(geo, mat);
-        tileMesh.userData = { tileId: id, x: tile.x, z: tile.z };
+        // Store the terrain type so applyTheme() can resolve each cached tile's
+        // base color from the registry / a theme color map without re-walking
+        // the tiles array.
+        tileMesh.userData = { tileId: id, x: tile.x, z: tile.z, terrainType: tile.terrainType };
         tileMesh.position.copy(worldPos);
         tileMesh.position.y = height / 2;
         tileMesh.castShadow = true;
@@ -154,6 +157,29 @@ export class TileMapMesh {
         this.group.add(bGroup);
         this.buildingMeshes.set(id, bGroup);
       }
+    });
+  }
+
+  /**
+   * Re-colors the EXISTING cached tile meshes in place to reflect an equipped
+   * cosmetic theme. Iterates every tile mesh, resolves its terrain type from
+   * userData, and sets its material color to the themed value.
+   *
+   * Source of truth: the passed `colors` map (terrain id → hex) wins; where a
+   * terrain has no override the tile falls back to the registry's current
+   * terrain color (which is itself theme-adjusted by getTerrains()). This means
+   * passing `{}` cleanly reverts every tile to its default look.
+   *
+   * The hills crest decoration shares the tile mesh's material, so it re-colors
+   * for free; other decorations keep their own (intentional) accent materials.
+   */
+  public applyTheme(colors: Partial<Record<string, string>>) {
+    this.tileMeshes.forEach((mesh) => {
+      const type = mesh.userData.terrainType as TerrainType | undefined;
+      if (!type) return;
+      const hex = colors[type] ?? getTerrainDef(type).color;
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      mat.color.set(hex);
     });
   }
 

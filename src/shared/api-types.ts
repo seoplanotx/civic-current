@@ -16,9 +16,30 @@ export interface EntitlementsResponse {
   hasPremium: boolean;
   hasSubscription: boolean;
   ownedPackIds: string[];
+  /**
+   * @deprecated Legacy multi-equip set kept for back-compat. New cosmetic
+   * features use the singular `equippedCosmeticId` below — a player equips one
+   * theme at a time. Do not add new readers of this field.
+   */
   equippedCosmeticIds: string[];
+  /** Cosmetic theme IDs the user has purchased. */
+  ownedCosmeticIds: string[];
+  /** The single currently-equipped theme; null = default look. */
+  equippedCosmeticId: string | null;
+  /** Subscription lifecycle state. Defaults to 'none' when no subscription. */
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'none';
   /** Email of the authenticated user, for UI display. */
   email?: string;
+}
+
+/** Body POSTed to /api/cosmetics/equip. `null` reverts to the default look. */
+export interface EquipCosmeticRequest {
+  cosmeticId: string | null;
+}
+
+/** Response from /api/cosmetics/equip — the resolved equipped theme. */
+export interface EquipCosmeticResponse {
+  equippedCosmeticId: string | null;
 }
 
 /* ─────────────────────────────── checkout ──────────────────────────────── */

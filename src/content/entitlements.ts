@@ -49,6 +49,15 @@ export class EntitlementService {
     return this.entitlements.ownedPackIds.has(packId);
   }
 
+  ownsCosmetic(cosmeticId: string): boolean {
+    return this.entitlements.ownedCosmeticIds.has(cosmeticId);
+  }
+
+  /** The single currently-equipped cosmetic theme; null = default look. */
+  get equippedCosmeticId(): string | null {
+    return this.entitlements.equippedCosmeticId;
+  }
+
   /**
    * Evaluate an EntitlementRequirement against the user's current state.
    * The ContentRegistry uses this to decide whether a pack's content
@@ -97,6 +106,14 @@ export class EntitlementService {
         partial.ownedPackIds ?? this.entitlements.ownedPackIds,
       equippedCosmeticIds:
         partial.equippedCosmeticIds ?? this.entitlements.equippedCosmeticIds,
+      ownedCosmeticIds:
+        partial.ownedCosmeticIds ?? this.entitlements.ownedCosmeticIds,
+      // null is a meaningful value here (default look), so only preserve the
+      // existing id when the field is genuinely absent from the patch.
+      equippedCosmeticId:
+        partial.equippedCosmeticId !== undefined
+          ? partial.equippedCosmeticId
+          : this.entitlements.equippedCosmeticId,
     };
     this.notify();
   }

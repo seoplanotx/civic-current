@@ -16,13 +16,15 @@ import {
   SignInButton,
   UserButton,
 } from '@clerk/clerk-react';
-import { Sparkles, LogIn } from 'lucide-react';
+import { Sparkles, LogIn, Crown } from 'lucide-react';
 import { usePremium, useSubscription } from '../content/hooks';
 import { UpgradeModal } from '../billing/UpgradeModal';
+import { MayorOfficeModal } from './MayorOfficeModal';
 import { isClerkConfigured } from '../auth/ClerkProvider';
 
 export const AccountMenu: React.FC = () => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [mayorOpen, setMayorOpen] = useState(false);
   const isPremium = usePremium();
   const isSubscriber = useSubscription();
 
@@ -49,20 +51,36 @@ export const AccountMenu: React.FC = () => {
       <SignedIn>
         {/* Entitlement pill */}
         {isSubscriber ? (
-          <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-400/20 border border-amber-400/40 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider">
+          // Active subscribers: the pill opens the modal for billing management.
+          <button
+            onClick={() => setMayorOpen(true)}
+            title="Manage your Mayor's Office subscription"
+            className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-400/20 border border-amber-400/40 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider hover:from-amber-500/30 hover:to-amber-400/30 transition-all active:scale-[0.97]"
+          >
             Mayor's Office
-          </span>
+          </button>
         ) : isPremium ? (
           <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500/20 to-violet-500/20 border border-indigo-400/40 text-[10px] font-extrabold text-indigo-300 uppercase tracking-wider flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> Premium
           </span>
         ) : (
-          <button
-            onClick={() => setUpgradeOpen(true)}
-            className="px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-md transition-all active:scale-[0.97]"
-          >
-            <Sparkles className="w-3 h-3" /> Upgrade
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className="px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-md transition-all active:scale-[0.97]"
+            >
+              <Sparkles className="w-3 h-3" /> Upgrade
+            </button>
+            {/* Subtle secondary entry point to the recurring subscription. */}
+            <button
+              onClick={() => setMayorOpen(true)}
+              title="Mayor's Office subscription"
+              aria-label="Mayor's Office subscription"
+              className="p-1 rounded-full text-amber-400/70 hover:text-amber-300 hover:bg-amber-400/10 transition-colors"
+            >
+              <Crown className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
 
         <UserButton
@@ -75,6 +93,7 @@ export const AccountMenu: React.FC = () => {
       </SignedIn>
 
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      <MayorOfficeModal open={mayorOpen} onClose={() => setMayorOpen(false)} />
     </div>
   );
 };

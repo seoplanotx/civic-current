@@ -2,7 +2,7 @@
  * Persistent storage helpers backed by Vercel KV.
  *
  * Storage layout:
- *   user:<userId>:entitlements      → JSON { hasPremium, hasSubscription, ownedPackIds[] }
+ *   user:<userId>:entitlements      → JSON { hasPremium, hasSubscription, ownedPackIds[], ownedCosmeticIds[], equippedCosmeticId, subscriptionStatus, stripeSubscriptionId? }
  *   user:<userId>:slots             → JSON string[] (slot ids in display order)
  *   user:<userId>:slot:<slotId>     → JSON CloudSaveSlot
  *   stripe:customer:<userId>        → Stripe customer id
@@ -24,12 +24,23 @@ interface StoredEntitlements {
   hasPremium: boolean;
   hasSubscription: boolean;
   ownedPackIds: string[];
+  /** Cosmetic theme IDs the user has purchased. */
+  ownedCosmeticIds: string[];
+  /** The single currently-equipped theme; null = default look. */
+  equippedCosmeticId: string | null;
+  /** Subscription lifecycle state. */
+  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'none';
+  /** Stripe subscription id, when the user has (or had) a subscription. */
+  stripeSubscriptionId?: string;
 }
 
 const DEFAULT_ENTITLEMENTS: StoredEntitlements = {
   hasPremium: false,
   hasSubscription: false,
   ownedPackIds: [],
+  ownedCosmeticIds: [],
+  equippedCosmeticId: null,
+  subscriptionStatus: 'none',
 };
 
 let cachedKv: VercelKV | null = null;
@@ -71,8 +82,11 @@ const DAILY_TTL_SECONDS = 60 * 60 * 24 * 60;
 export async function getEntitlements(userId: string): Promise<StoredEntitlements> {
   const kv = getKv();
   if (!kv) return DEFAULT_ENTITLEMENTS;
-  const raw = await kv.get<StoredEntitlements>(k.entitlements(userId));
-  return raw ?? DEFAULT_ENTITLEMENTS;
+  const raw = await kv.get<Partial<StoredEntitlements>>(k.entitlements(userId));
+  if (!raw) return DEFAULT_ENTITLEMENTS;
+  // Records written before the cosmetic/subscription fields existed are
+  // back-filled with defaults so callers always see the full shape.
+  return { ...DEFAULT_ENTITLEMENTS, ...raw };
 }
 
 export async function setEntitlements(
@@ -85,9 +99,38 @@ export async function setEntitlements(
     hasPremium: next.hasPremium ?? current.hasPremium,
     hasSubscription: next.hasSubscription ?? current.hasSubscription,
     ownedPackIds: next.ownedPackIds ?? current.ownedPackIds,
+    ownedCosmeticIds: next.ownedCosmeticIds ?? current.ownedCosmeticIds,
+    equippedCosmeticId:
+      next.equippedCosmeticId !== undefined
+        ? next.equippedCosmeticId
+        : current.equippedCosmeticId,
+    subscriptionStatus: next.subscriptionStatus ?? current.subscriptionStatus,
+    stripeSubscriptionId:
+      next.stripeSubscriptionId ?? current.stripeSubscriptionId,
   };
   if (kv) await kv.set(k.entitlements(userId), merged);
   return merged;
+}
+
+/**
+ * Equip (or clear) a cosmetic theme for a user. Validates ownership before
+ * persisting: a non-null id must be in the user's `ownedCosmeticIds`, otherwise
+ * the request is ignored and the current equipped id is returned unchanged.
+ * Passing `null` always succeeds and reverts to the default look.
+ *
+ * Returns the resolved equipped id after the operation.
+ */
+export async function setEquippedCosmetic(
+  userId: string,
+  cosmeticId: string | null
+): Promise<string | null> {
+  const current = await getEntitlements(userId);
+  if (cosmeticId !== null && !current.ownedCosmeticIds.includes(cosmeticId)) {
+    // User doesn't own this theme — reject silently, keep current selection.
+    return current.equippedCosmeticId;
+  }
+  const merged = await setEntitlements(userId, { equippedCosmeticId: cosmeticId });
+  return merged.equippedCosmeticId;
 }
 
 /* ─────────────────────────────── slots ────────────────────────────────── */

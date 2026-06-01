@@ -3,6 +3,8 @@ import { useGameStore } from '../store/useGameStore';
 import { SceneManager } from '../three/SceneManager';
 import { Volume2, VolumeX, Save, RotateCcw, Layers } from 'lucide-react';
 import { CitySlotPicker } from './CitySlotPicker';
+import { useEntitlements } from '../content/hooks';
+import { getActiveTerrainColors } from '../content/cosmetics/theme';
 
 export const GameCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -12,6 +14,10 @@ export const GameCanvas: React.FC = () => {
 
   const { state, selectTile, soundEnabled, setSoundEnabled, saveCurrentGame, loadSavedGame, currentSlotName } = useGameStore();
   const { tiles, selectedTileId, pollution, reliability } = state;
+
+  // Track the equipped cosmetic theme so the board re-colors live when the
+  // player buys/equips/unequips a theme. We key the effect on the id only.
+  const equippedCosmeticId = useEntitlements().equippedCosmeticId;
 
   const handleSave = async () => {
     try {
@@ -99,6 +105,17 @@ export const GameCanvas: React.FC = () => {
       managerRef.current.updateSmog(pollution, reliability);
     }
   }, [pollution, reliability]);
+
+  // Re-color the live board whenever the equipped cosmetic theme changes
+  // (purchase → equip → unequip). getActiveTerrainColors() is read at apply
+  // time so subscription-granted themes resolve correctly; passing {} reverts
+  // to the default look. This only forwards to the manager — no React state is
+  // set here, so it doesn't trip react-hooks/set-state-in-effect.
+  useEffect(() => {
+    if (managerRef.current) {
+      managerRef.current.applyTheme(getActiveTerrainColors());
+    }
+  }, [equippedCosmeticId]);
 
   return (
     <div className="relative w-full h-full bg-slate-900 overflow-hidden flex-1 rounded-2xl border border-white/5 shadow-2xl">

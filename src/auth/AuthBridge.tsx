@@ -66,6 +66,9 @@ const AuthBridgeInner: React.FC = () => {
           hasSubscription: data.hasSubscription,
           ownedPackIds: new Set(data.ownedPackIds),
           equippedCosmeticIds: new Set(data.equippedCosmeticIds ?? []),
+          ownedCosmeticIds: new Set(data.ownedCosmeticIds ?? []),
+          equippedCosmeticId: data.equippedCosmeticId ?? null,
+          subscriptionStatus: data.subscriptionStatus ?? 'none',
         });
       } catch {
         // Network failure → default free entitlements. The user just sees
@@ -77,6 +80,9 @@ const AuthBridgeInner: React.FC = () => {
             hasSubscription: false,
             ownedPackIds: new Set(),
             equippedCosmeticIds: new Set(),
+            ownedCosmeticIds: new Set(),
+            equippedCosmeticId: null,
+            subscriptionStatus: 'none',
           });
         }
       }

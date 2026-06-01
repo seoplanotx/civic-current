@@ -179,8 +179,17 @@ export interface UserEntitlements {
   hasSubscription: boolean;
   /** Owned content pack IDs (paid expansions). */
   ownedPackIds: ReadonlySet<string>;
-  /** Active cosmetic IDs the user has equipped (subset of owned). */
+  /**
+   * @deprecated Legacy multi-equip set kept for back-compat. New cosmetic
+   * features use the singular `equippedCosmeticId` below.
+   */
   equippedCosmeticIds?: ReadonlySet<string>;
+  /** Owned cosmetic theme IDs (purchasable re-skins). */
+  ownedCosmeticIds: ReadonlySet<string>;
+  /** The single currently-equipped theme; null = default look. */
+  equippedCosmeticId: string | null;
+  /** Subscription lifecycle state ('active' | 'canceled' | 'past_due' | 'none'). */
+  subscriptionStatus?: string;
 }
 
 export const DEFAULT_ENTITLEMENTS: UserEntitlements = {
@@ -188,6 +197,9 @@ export const DEFAULT_ENTITLEMENTS: UserEntitlements = {
   hasSubscription: false,
   ownedPackIds: new Set(),
   equippedCosmeticIds: new Set(),
+  ownedCosmeticIds: new Set(),
+  equippedCosmeticId: null,
+  subscriptionStatus: 'none',
 };
 
 /* ──────────────────────────────────────────────────────────────────────────

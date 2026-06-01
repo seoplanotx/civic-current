@@ -7,9 +7,11 @@ import { BottomBar } from './components/BottomBar';
 import { ScoreCard } from './components/ScoreCard';
 import { AccountMenu } from './components/AccountMenu';
 import { ShopButton } from './components/ShopButton';
+import { ThemesButton } from './components/ThemesButton';
 import { DailyChallengeButton } from './components/DailyChallengeButton';
 import { useGameStore } from './store/useGameStore';
 import { getCatalogEntry } from './content/catalog';
+import { getCosmeticCatalogEntry } from './content/cosmetics/catalog';
 import { HelpCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 /** True when the page was opened via a shared "?daily=…" deep link. */
@@ -20,9 +22,11 @@ function hasDailyDeepLink(): boolean {
 
 /**
  * Initial post-purchase toast derived from the Stripe redirect-back query
- * params. Covers both the premium unlock (?premium=...) and content packs
- * (?pack=<id>&result=...). Entitlements refresh on reload via AuthBridge, so
- * by the time this shows the user already owns what they bought.
+ * params. Covers the premium unlock (?premium=...), content packs
+ * (?pack=<id>&result=...), cosmetic themes (?cosmetic=<id>&result=...), and the
+ * Mayor's Office subscription (?subscription=...). Entitlements refresh on
+ * reload via AuthBridge, so by the time this shows the user already owns what
+ * they bought.
  */
 function initialPurchaseToast(): string | null {
   if (typeof window === 'undefined') return null;
@@ -32,11 +36,24 @@ function initialPurchaseToast(): string | null {
   if (premium === 'success') return 'Premium unlocked! Welcome to Civic Current Premium.';
   if (premium === 'cancel') return 'Purchase cancelled — no charge was made.';
 
+  const subscription = params.get('subscription');
+  if (subscription === 'success')
+    return "Mayor's Office active — thank you for supporting Civic Current!";
+  if (subscription === 'cancel') return 'Purchase cancelled — no charge was made.';
+
   const packId = params.get('pack');
   if (packId) {
     const result = params.get('result');
     const name = getCatalogEntry(packId)?.name ?? 'Content pack';
     if (result === 'success') return `${name} unlocked! New buildings and events are now in play.`;
+    if (result === 'cancel') return 'Purchase cancelled — no charge was made.';
+  }
+
+  const cosmeticId = params.get('cosmetic');
+  if (cosmeticId) {
+    const result = params.get('result');
+    const name = getCosmeticCatalogEntry(cosmeticId)?.name ?? 'Theme';
+    if (result === 'success') return `${name} unlocked! Open Themes to equip it.`;
     if (result === 'cancel') return 'Purchase cancelled — no charge was made.';
   }
   return null;
@@ -64,20 +81,27 @@ const App: React.FC = () => {
     window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
   }, [startDailyChallenge]);
 
-  // Stripe redirect-back handling for both premium (?premium=...) and packs
-  // (?pack=<id>&result=...). The toast text is derived at init (see
-  // initialPurchaseToast); this effect only runs side effects — stripping the
-  // query so a refresh doesn't re-trigger, and scheduling the auto-dismiss.
-  // Entitlements are refreshed by AuthBridge on reload, so by the time the
-  // toast shows the purchase is already reflected in the registry.
+  // Stripe redirect-back handling for premium (?premium=...), packs
+  // (?pack=<id>&result=...), cosmetic themes (?cosmetic=<id>&result=...), and
+  // the Mayor's Office subscription (?subscription=...). The toast text is
+  // derived at init (see initialPurchaseToast); this effect only runs side
+  // effects — stripping the query so a refresh doesn't re-trigger, and
+  // scheduling the auto-dismiss. Entitlements are refreshed by AuthBridge on
+  // reload, so by the time the toast shows the purchase is already reflected in
+  // the registry.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const isPremium = params.get('premium') === 'success' || params.get('premium') === 'cancel';
     const isPack = params.has('pack');
-    if (!isPremium && !isPack) return;
+    const isCosmetic = params.has('cosmetic');
+    const isSubscription =
+      params.get('subscription') === 'success' || params.get('subscription') === 'cancel';
+    if (!isPremium && !isPack && !isCosmetic && !isSubscription) return;
 
     const succeeded =
-      params.get('premium') === 'success' || params.get('result') === 'success';
+      params.get('premium') === 'success' ||
+      params.get('subscription') === 'success' ||
+      params.get('result') === 'success';
 
     window.history.replaceState({}, '', window.location.pathname);
     const timer = setTimeout(() => setPurchaseToast(null), succeeded ? 6000 : 4000);
@@ -119,8 +143,9 @@ const App: React.FC = () => {
         <DailyChallengeButton />
       </div>
 
-      {/* Account menu + shop — float top-right, above the dashboard grid */}
+      {/* Account menu + shop + themes — float top-right, above the dashboard grid */}
       <div className="absolute top-4 right-6 z-30 flex items-center gap-2">
+        <ThemesButton />
         <ShopButton />
         <AccountMenu />
       </div>

@@ -32,6 +32,9 @@ export default async function handler(
       hasSubscription: false,
       ownedPackIds: [],
       equippedCosmeticIds: [],
+      ownedCosmeticIds: [],
+      equippedCosmeticId: null,
+      subscriptionStatus: 'none',
     };
     res.status(200).json(anon);
     return;
@@ -43,6 +46,9 @@ export default async function handler(
     hasSubscription: stored.hasSubscription,
     ownedPackIds: stored.ownedPackIds,
     equippedCosmeticIds: [],
+    ownedCosmeticIds: stored.ownedCosmeticIds,
+    equippedCosmeticId: stored.equippedCosmeticId,
+    subscriptionStatus: stored.subscriptionStatus,
     email: user.email,
   };
   res.status(200).json(body);

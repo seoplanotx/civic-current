@@ -24,6 +24,7 @@ import {
 } from './types';
 import type { BuildingDef, GameEvent, TerrainDef } from '../types';
 import { EntitlementService } from './entitlements';
+import { getActiveTerrainColors } from './cosmetics/theme';
 
 type Listener = () => void;
 
@@ -119,7 +120,18 @@ export class ContentRegistry {
 
   getTerrains(): Record<string, TerrainDef> {
     if (!this.cache.terrains) {
-      this.cache.terrains = this.merge((p) => p.terrains);
+      const merged = this.merge((p) => p.terrains);
+      // Apply the active cosmetic theme on top of the merged defs: clone each
+      // terrain and override its `.color` where the equipped theme provides one.
+      // The cache is invalidated + listeners notified on every entitlement
+      // change (see constructor), so equipping a theme re-themes automatically.
+      const themeColors = getActiveTerrainColors();
+      const themed: Record<string, TerrainDef> = {};
+      for (const [id, def] of Object.entries(merged)) {
+        const override = themeColors[id];
+        themed[id] = override ? { ...def, color: override } : def;
+      }
+      this.cache.terrains = themed;
     }
     return this.cache.terrains;
   }

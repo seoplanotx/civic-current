@@ -124,6 +124,14 @@ export class SceneManager {
   }
 
   /**
+   * Applies an equipped cosmetic theme's terrain colors to the live board.
+   * Forwards to the TileMapMesh, which recolors cached tile materials in place.
+   */
+  public applyTheme(colors: Partial<Record<string, string>>) {
+    this.tileMap.applyTheme(colors);
+  }
+
+  /**
    * Syncs the selection and hover graphics.
    */
   public setSelectedAndHover(selectedId: string | null, hoveredId: string | null, tiles: Tile[]) {
