@@ -26,7 +26,7 @@ core + one-time premium unlock) in production on Vercel.
 ### 2. Stripe
 
 1. Create a Stripe account at https://dashboard.stripe.com
-2. Under **Products**, create a product:
+2. Under **Products**, create a product for the premium unlock:
    - Name: `Civic Current Premium Unlock`
    - One-time payment, $14.99 USD
 3. Copy the **price ID** (looks like `price_xxxx`) → `STRIPE_PRICE_PREMIUM_UNLOCK`
@@ -39,6 +39,30 @@ core + one-time premium unlock) in production on Vercel.
 6. **Use test mode** until you've verified the full flow end-to-end. Stripe's
    `4242 4242 4242 4242` test card always succeeds; `4000 0000 0000 9995`
    simulates an insufficient-funds decline.
+
+#### Content packs (the in-game Shop)
+
+The Shop (top-right **Shop** button) sells one-time content packs. Each pack
+needs its own Stripe Price, mapped to an env var. The mapping lives in
+[`src/content/catalog.ts`](src/content/catalog.ts) (`stripePriceEnv` per entry):
+
+| Pack | Stripe product (suggested) | Env var |
+| --- | --- | --- |
+| Throwback Era | `Civic Current — Throwback Era`, one-time $4.99 | `STRIPE_PRICE_PACK_THROWBACK` |
+| Tomorrow's City | `Civic Current — Tomorrow's City`, one-time $4.99 | `STRIPE_PRICE_PACK_TOMORROWS_CITY` |
+
+For each pack: create a one-time Product + Price in Stripe, copy the price ID
+into the matching env var. A missing var makes that pack's **Buy** return a 500
+(the rest of the Shop still works). To add a *new* pack later: register it in
+`catalog.ts` with a fresh `stripePriceEnv`, set that env var, and ship the pack
+content under `src/content/packs/<id>/` — no checkout/webhook code changes
+needed (one generic `/api/checkout/pack` endpoint serves every pack).
+
+> **Refunds:** both checkout endpoints attach the buyer + SKU to
+> `payment_intent_data.metadata`, so a Stripe refund fires `charge.refunded`
+> and the webhook revokes the matching entitlement automatically. This only
+> works for purchases made after this was wired up — older charges that lack
+> the metadata won't auto-revoke.
 
 ### 3. Vercel KV
 
@@ -77,6 +101,8 @@ http://localhost:3000/api/...
 
 ## Verifying the end-to-end purchase flow
 
+**Premium unlock:**
+
 1. Open the app, click **Sign in**, create a Clerk test account
 2. Click **Upgrade** in the top-right account menu
 3. Click **Unlock Premium** → you'll be redirected to Stripe Checkout
@@ -86,18 +112,36 @@ http://localhost:3000/api/...
    **Upgrade** button in the account menu
 7. The **Cities** menu now allows 3 city slots
 
+**Content pack:**
+
+1. Signed in, click **Shop** (top-right) → **Buy $4.99** on a pack
+2. Complete Stripe Checkout with the test card
+3. You'll be redirected to `/?pack=<id>&result=success` and see an
+   "unlocked" toast
+4. Reopen the **Shop** — the pack now shows an **Owned** badge, and its new
+   buildings/events appear in-game (the registry re-filters on the
+   entitlement refresh)
+
+**Refund (revocation):** refund the test charge in the Stripe dashboard. The
+`charge.refunded` webhook fires and the matching entitlement is revoked —
+premium reverts to the Upgrade button, or the pack returns to a purchasable
+state.
+
 ## What the webhook does
 
-When Stripe POSTs `checkout.session.completed` to `/api/webhook/stripe`, the
-handler:
+`/api/webhook/stripe` verifies the `stripe-signature` header against
+`STRIPE_WEBHOOK_SECRET`, then:
 
-1. Verifies the `stripe-signature` header against `STRIPE_WEBHOOK_SECRET`
-2. Pulls the Clerk user id from `session.client_reference_id`
-3. Calls `setEntitlements(userId, { hasPremium: true })` on KV
+- On **`checkout.session.completed`**, reads `client_reference_id` (the Clerk
+  user id) and the `sku` metadata. `premium_unlock` grants premium;
+  `pack:<id>` adds the pack to `ownedPackIds`.
+- On **`charge.refunded`**, reads the same `sku` + `clerkUserId` from the
+  charge metadata (propagated via `payment_intent_data`) and revokes the
+  corresponding entitlement.
 
-If KV is unreachable, the handler returns 500 and Stripe will retry the event
-for up to 3 days. The handler is idempotent — duplicate deliveries don't
-double-grant.
+If KV is unreachable, the handler returns 500 and Stripe retries for up to 3
+days. It is idempotent — duplicate deliveries don't double-grant, and a
+pack is only added once.
 
 ## Local webhook testing
 
@@ -115,17 +159,20 @@ secret in `.env.local` for `STRIPE_WEBHOOK_SECRET` while testing.
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
 | Account menu shows "ANONYMOUS · LOCAL SAVE" | `VITE_CLERK_PUBLISHABLE_KEY` not set | Add to Vercel env vars |
+| Shop shows "Purchases unavailable" | `VITE_CLERK_PUBLISHABLE_KEY` not set | Purchases need auth; add the Clerk key |
 | Upgrade modal: "Server missing STRIPE_PRICE_..." | Price env var unset | Add `STRIPE_PRICE_PREMIUM_UNLOCK` |
+| Shop Buy: "Server missing STRIPE_PRICE_PACK_..." | Pack price env var unset | Add the pack's `STRIPE_PRICE_PACK_*` var |
 | Upgrade modal: "401 Authentication required" | User not signed in | Click "Sign in to purchase" |
 | Webhook 400 with "signature verification failed" | Wrong webhook secret | Re-copy from Stripe dashboard |
+| Refund didn't revoke access | Charge predates `payment_intent_data` metadata | Only affects charges made before the fix; revoke manually in KV |
 | Cloud save returns 401 in console | Token getter returning null | Clerk session expired; sign in again |
 | Slots list empty after upgrade | KV not provisioned | Connect Vercel KV to the project |
 
 ## Phase-by-phase roadmap
 
 Phase 0 (✅ shipped) — content-pack architecture
-Phase 1 (this guide) — auth, premium unlock, cloud save
-Phase 2 — first paid content pack (Post-Carbon Future)
+Phase 1 (✅ shipped) — auth, premium unlock, cloud save
+Phase 2 (✅ shipped) — paid content packs (Throwback Era, Tomorrow's City) + in-game Shop
 Phase 3 — cosmetic theme shop
 Phase 4 — Mayor's Office subscription
 Phase 5 — community scenario workshop
