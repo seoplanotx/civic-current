@@ -98,6 +98,16 @@ export default async function handler(
       packId: body.packId,
       clerkUserId: user.userId,
     },
+    // Propagate metadata onto the PaymentIntent → Charge so the
+    // charge.refunded webhook can resolve the user + sku and revoke pack
+    // ownership. Session metadata alone does not reach the charge.
+    payment_intent_data: {
+      metadata: {
+        sku: `pack:${body.packId}`,
+        packId: body.packId,
+        clerkUserId: user.userId,
+      },
+    },
   });
 
   if (!session.url) {

@@ -91,21 +91,6 @@ interface CardProps {
 }
 
 const PackCard: React.FC<CardProps> = ({ pack, owned }) => {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { isSignedIn } = useAuth();
-
-  const handleBuy = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await startPackCheckout(pack.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setBusy(false);
-    }
-  };
-
   return (
     <div
       className="bg-slate-950/60 border rounded-xl p-4 flex flex-col gap-3"
@@ -158,34 +143,78 @@ const PackCard: React.FC<CardProps> = ({ pack, owned }) => {
         ))}
       </ul>
 
+      {!owned && <PackBuyRow pack={pack} />}
+    </div>
+  );
+};
+
+/**
+ * The purchase CTA row. Split out — and rendered only when Clerk is configured
+ * — because it calls Clerk's useAuth(), which THROWS when there's no
+ * <ClerkProvider> in the tree (i.e. when VITE_CLERK_PUBLISHABLE_KEY is unset).
+ * When Clerk is absent we show a disabled, informative button instead so the
+ * shop still renders and lists what's for sale.
+ */
+const PackBuyRow: React.FC<{ pack: (typeof PACK_CATALOG)[number] }> = ({ pack }) => {
+  if (!isClerkConfigured) {
+    return (
+      <div className="flex justify-end pt-2 border-t border-white/5">
+        <button
+          disabled
+          title="Set VITE_CLERK_PUBLISHABLE_KEY and the Stripe env vars to enable purchases"
+          className="px-4 py-2 rounded-xl bg-slate-800 text-slate-500 text-[11px] font-extrabold uppercase tracking-wider shadow-md opacity-60 cursor-not-allowed"
+        >
+          Purchases unavailable
+        </button>
+      </div>
+    );
+  }
+  return <PackBuyRowAuthed pack={pack} />;
+};
+
+const PackBuyRowAuthed: React.FC<{ pack: (typeof PACK_CATALOG)[number] }> = ({ pack }) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isSignedIn } = useAuth();
+
+  const handleBuy = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await startPackCheckout(pack.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
       {error && (
         <div className="text-[11px] text-red-300 bg-red-950/40 border border-red-500/30 rounded-lg p-2">
           {error}
         </div>
       )}
-
-      {!owned && (
-        <div className="flex justify-end pt-2 border-t border-white/5">
-          {isSignedIn ? (
-            <button
-              onClick={handleBuy}
-              disabled={busy}
-              className="px-4 py-2 rounded-xl text-white text-[11px] font-extrabold uppercase tracking-wider shadow-md disabled:opacity-60 transition-all active:scale-[0.97]"
-              style={{
-                background: `linear-gradient(135deg, ${pack.accentColor}, ${pack.accentColor}cc)`,
-              }}
-            >
-              {busy ? 'Redirecting…' : `Buy ${pack.displayPrice}`}
+      <div className="flex justify-end pt-2 border-t border-white/5">
+        {isSignedIn ? (
+          <button
+            onClick={handleBuy}
+            disabled={busy}
+            className="px-4 py-2 rounded-xl text-white text-[11px] font-extrabold uppercase tracking-wider shadow-md disabled:opacity-60 transition-all active:scale-[0.97]"
+            style={{
+              background: `linear-gradient(135deg, ${pack.accentColor}, ${pack.accentColor}cc)`,
+            }}
+          >
+            {busy ? 'Redirecting…' : `Buy ${pack.displayPrice}`}
+          </button>
+        ) : (
+          <SignInButton mode="modal">
+            <button className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-extrabold uppercase tracking-wider shadow-md transition-colors">
+              Sign in to purchase
             </button>
-          ) : (
-            <SignInButton mode="modal">
-              <button className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-extrabold uppercase tracking-wider shadow-md transition-colors">
-                Sign in to purchase
-              </button>
-            </SignInButton>
-          )}
-        </div>
-      )}
-    </div>
+          </SignInButton>
+        )}
+      </div>
+    </>
   );
 };

@@ -88,6 +88,17 @@ export default async function handler(
       sku: 'premium_unlock',
       clerkUserId: user.userId,
     },
+    // Propagate the same metadata onto the underlying PaymentIntent so it
+    // flows through to the Charge. The charge.refunded webhook reads
+    // charge.metadata to know whose entitlement to revoke — session metadata
+    // does NOT propagate to the charge, so without this refunds silently
+    // fail to revoke.
+    payment_intent_data: {
+      metadata: {
+        sku: 'premium_unlock',
+        clerkUserId: user.userId,
+      },
+    },
   });
 
   if (!session.url) {

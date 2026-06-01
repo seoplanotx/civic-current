@@ -6,8 +6,10 @@ import { RightPanel } from './components/RightPanel';
 import { BottomBar } from './components/BottomBar';
 import { ScoreCard } from './components/ScoreCard';
 import { AccountMenu } from './components/AccountMenu';
+import { ShopButton } from './components/ShopButton';
 import { DailyChallengeButton } from './components/DailyChallengeButton';
 import { useGameStore } from './store/useGameStore';
+import { getCatalogEntry } from './content/catalog';
 import { HelpCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 /** True when the page was opened via a shared "?daily=…" deep link. */
@@ -16,12 +18,27 @@ function hasDailyDeepLink(): boolean {
   return new URLSearchParams(window.location.search).has('daily');
 }
 
-/** Initial post-purchase toast derived from the Stripe redirect-back query param. */
+/**
+ * Initial post-purchase toast derived from the Stripe redirect-back query
+ * params. Covers both the premium unlock (?premium=...) and content packs
+ * (?pack=<id>&result=...). Entitlements refresh on reload via AuthBridge, so
+ * by the time this shows the user already owns what they bought.
+ */
 function initialPurchaseToast(): string | null {
   if (typeof window === 'undefined') return null;
-  const premium = new URLSearchParams(window.location.search).get('premium');
+  const params = new URLSearchParams(window.location.search);
+
+  const premium = params.get('premium');
   if (premium === 'success') return 'Premium unlocked! Welcome to Civic Current Premium.';
   if (premium === 'cancel') return 'Purchase cancelled — no charge was made.';
+
+  const packId = params.get('pack');
+  if (packId) {
+    const result = params.get('result');
+    const name = getCatalogEntry(packId)?.name ?? 'Content pack';
+    if (result === 'success') return `${name} unlocked! New buildings and events are now in play.`;
+    if (result === 'cancel') return 'Purchase cancelled — no charge was made.';
+  }
   return null;
 }
 
@@ -47,18 +64,23 @@ const App: React.FC = () => {
     window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
   }, [startDailyChallenge]);
 
-  // Stripe redirect-back handling. The toast text itself is derived at init
-  // (see initialPurchaseToast); this effect only runs the side effects —
-  // stripping the query param so a refresh doesn't re-trigger, and scheduling
-  // the auto-dismiss. Entitlements are refreshed by AuthBridge when the Clerk
-  // session reloads, so by the time the toast shows, usePremium() is true.
+  // Stripe redirect-back handling for both premium (?premium=...) and packs
+  // (?pack=<id>&result=...). The toast text is derived at init (see
+  // initialPurchaseToast); this effect only runs side effects — stripping the
+  // query so a refresh doesn't re-trigger, and scheduling the auto-dismiss.
+  // Entitlements are refreshed by AuthBridge on reload, so by the time the
+  // toast shows the purchase is already reflected in the registry.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const premium = params.get('premium');
-    if (premium !== 'success' && premium !== 'cancel') return;
+    const isPremium = params.get('premium') === 'success' || params.get('premium') === 'cancel';
+    const isPack = params.has('pack');
+    if (!isPremium && !isPack) return;
+
+    const succeeded =
+      params.get('premium') === 'success' || params.get('result') === 'success';
 
     window.history.replaceState({}, '', window.location.pathname);
-    const timer = setTimeout(() => setPurchaseToast(null), premium === 'success' ? 6000 : 4000);
+    const timer = setTimeout(() => setPurchaseToast(null), succeeded ? 6000 : 4000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -97,8 +119,9 @@ const App: React.FC = () => {
         <DailyChallengeButton />
       </div>
 
-      {/* Account menu — floats top-right, above the dashboard grid */}
-      <div className="absolute top-4 right-6 z-30">
+      {/* Account menu + shop — float top-right, above the dashboard grid */}
+      <div className="absolute top-4 right-6 z-30 flex items-center gap-2">
+        <ShopButton />
         <AccountMenu />
       </div>
 
