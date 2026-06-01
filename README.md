@@ -9,6 +9,26 @@ Built with React 19, Three.js, and TypeScript on Vite, with optional accounts
 (Stripe). The app **degrades gracefully** — with no keys configured it runs in
 anonymous, local-save-only mode.
 
+## Daily Challenge
+
+Every player worldwide gets the **same city and the same event stream** each
+day, and races for the best Legacy score on a shared leaderboard.
+
+This works because the simulation is **fully deterministic**: a single integer
+`seed` drives both map generation and the per-turn event RNG (see
+[`src/engine/rng.ts`](src/engine/rng.ts) and [`src/shared/daily.ts`](src/shared/daily.ts)),
+so the same seed plus the same moves always produces the same game. The daily
+seed is derived from the UTC date, so the challenge rolls over at midnight UTC.
+
+- **Play:** tap **Daily Challenge** (top-left). Finish your 50-turn term to see
+  the leaderboard and your rank.
+- **Share:** the end-of-term screen generates a Wordle-style result card with a
+  `?daily=` deep link — anyone who opens it drops straight into the same day's
+  challenge.
+- **Leaderboard:** backed by Vercel KV (`api/daily/leaderboard.ts`),
+  best-per-player, supporting both signed-in (Clerk) and anonymous players. With
+  KV unconfigured it degrades to offline mode — the game stays fully playable.
+
 ## Tech stack
 
 | Area      | Tech                                              |
