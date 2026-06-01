@@ -31,12 +31,25 @@ export type BuildingType =
   | 'datacenter'
   | 'supercapacitor';
 
+/**
+ * Branded string for building ids contributed by content packs at runtime.
+ *
+ * Packs namespace their building ids (e.g. `"throwback.strip_mall"`,
+ * `"tomorrow.ai_datacenter"`). These are not members of the `BuildingType`
+ * union — the base game can't enumerate them — but a tile can legitimately
+ * hold one once the owning pack is loaded. The brand keeps this distinct from
+ * a plain `string`: arbitrary strings (and base-id typos) are still rejected
+ * on assignment to `Tile.building`, so base-game safety is preserved, while
+ * namespaced pack ids remain comparable in pack event/scenario conditions.
+ */
+export type PackBuildingId = string & { readonly __packBuilding: unique symbol };
+
 export interface Tile {
   id: string;
   x: number;
   z: number;
   terrainType: TerrainType;
-  building: BuildingType | null;
+  building: BuildingType | PackBuildingId | null;
 }
 
 /** Re-exported here so all content-layer code can import everything from one place. */
