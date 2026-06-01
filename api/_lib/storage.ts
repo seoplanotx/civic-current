@@ -15,7 +15,10 @@
  */
 
 import { createClient, type VercelKV } from '@vercel/kv';
-import type { CloudSaveSlot } from '../../src/shared/api-types';
+import type {
+  CloudSaveSlot,
+  DailyLeaderboardEntry,
+} from '../../src/shared/api-types';
 
 interface StoredEntitlements {
   hasPremium: boolean;
@@ -54,7 +57,14 @@ const k = {
   slot: (userId: string, slotId: string) => `user:${userId}:slot:${slotId}`,
   stripeCustomer: (userId: string) => `stripe:customer:${userId}`,
   stripeCheckout: (sessionId: string) => `stripe:checkout:${sessionId}`,
+  // Daily challenge: a sorted set ranks players by score; a hash holds the
+  // full entry (name, title, breakdown) keyed by playerId.
+  dailyRank: (challengeId: string) => `daily:${challengeId}:rank`,
+  dailyEntries: (challengeId: string) => `daily:${challengeId}:entries`,
 };
+
+/** Keep finished daily boards around for two months, then let them expire. */
+const DAILY_TTL_SECONDS = 60 * 60 * 24 * 60;
 
 /* ─────────────────────────────── entitlements ─────────────────────────── */
 
@@ -163,6 +173,102 @@ export async function consumePendingCheckout(
   const userId = await kv.get<string>(k.stripeCheckout(sessionId));
   if (userId) await kv.del(k.stripeCheckout(sessionId));
   return userId;
+}
+
+/* ─────────────────────────────── daily challenge ──────────────────────── */
+
+/**
+ * Record a player's daily-challenge result. Best-per-player: a submission only
+ * overwrites the player's prior entry if the new legacy score is higher.
+ *
+ * Returns the player's 1-based rank and the total field size. When KV is not
+ * configured this is a no-op returning a zeroed, un-accepted result so the
+ * client can degrade gracefully (play offline, no board).
+ *
+ * NOTE: scores are currently client-reported and trusted. A future pass should
+ * verify them by replaying the submitted move sequence server-side against the
+ * deterministic engine — the seeded RNG is what makes that verification
+ * possible. Until then, treat the board as casual, not competitive-integrity.
+ */
+export async function submitDailyScore(
+  challengeId: string,
+  entry: DailyLeaderboardEntry
+): Promise<{ rank: number; total: number; accepted: boolean }> {
+  const kv = getKv();
+  if (!kv) return { rank: 0, total: 0, accepted: false };
+
+  const rankKey = k.dailyRank(challengeId);
+  const entriesKey = k.dailyEntries(challengeId);
+
+  const existing = await kv.hget<DailyLeaderboardEntry>(
+    entriesKey,
+    entry.playerId
+  );
+
+  const accepted = !existing || entry.legacy > existing.legacy;
+  if (accepted) {
+    await kv.zadd(rankKey, { score: entry.legacy, member: entry.playerId });
+    await kv.hset(entriesKey, { [entry.playerId]: entry });
+    // Refresh TTL on every accepted write so an active board never expires.
+    await kv.expire(rankKey, DAILY_TTL_SECONDS);
+    await kv.expire(entriesKey, DAILY_TTL_SECONDS);
+  }
+
+  const best = accepted ? entry.legacy : existing!.legacy;
+  const total = (await kv.zcard(rankKey)) ?? 0;
+  // Rank = (players strictly above me) + 1. Scores are integers, so anyone in
+  // [best+1, +inf] is strictly higher.
+  const higher = (await kv.zcount(rankKey, best + 1, '+inf')) ?? 0;
+  return { rank: higher + 1, total, accepted };
+}
+
+/**
+ * Fetch the top `limit` entries for a challenge (highest legacy first), plus
+ * the total field size and — when a playerId is supplied — that player's own
+ * standing even if they fall outside the top slice.
+ */
+export async function getDailyLeaderboard(
+  challengeId: string,
+  limit: number,
+  playerId?: string
+): Promise<{
+  entries: DailyLeaderboardEntry[];
+  total: number;
+  you?: { rank: number; entry: DailyLeaderboardEntry };
+}> {
+  const kv = getKv();
+  if (!kv) return { entries: [], total: 0 };
+
+  const rankKey = k.dailyRank(challengeId);
+  const entriesKey = k.dailyEntries(challengeId);
+
+  const total = (await kv.zcard(rankKey)) ?? 0;
+  if (total === 0) return { entries: [], total: 0 };
+
+  const topIds =
+    (await kv.zrange<string[]>(rankKey, 0, limit - 1, { rev: true })) ?? [];
+
+  let entries: DailyLeaderboardEntry[] = [];
+  if (topIds.length > 0) {
+    const map = await kv.hmget<Record<string, DailyLeaderboardEntry>>(
+      entriesKey,
+      ...topIds
+    );
+    entries = topIds
+      .map((id) => map?.[id])
+      .filter((e): e is DailyLeaderboardEntry => Boolean(e));
+  }
+
+  let you: { rank: number; entry: DailyLeaderboardEntry } | undefined;
+  if (playerId) {
+    const mine = await kv.hget<DailyLeaderboardEntry>(entriesKey, playerId);
+    if (mine) {
+      const higher = (await kv.zcount(rankKey, mine.legacy + 1, '+inf')) ?? 0;
+      you = { rank: higher + 1, entry: mine };
+    }
+  }
+
+  return { entries, total, you };
 }
 
 /** Whether KV is currently configured. Used by handlers to short-circuit. */

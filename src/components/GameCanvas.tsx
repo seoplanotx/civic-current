@@ -39,17 +39,17 @@ export const GameCanvas: React.FC = () => {
     }
   };
 
-  // Initialize Three.js scene manager
+  // Initialize the Three.js scene manager exactly once, on mount. `tiles` and
+  // `selectTile` are intentionally captured at init — subsequent tile changes
+  // flow through the dedicated updateTiles effect below, and selectTile is a
+  // stable Zustand action — so this effect deliberately has an empty dep array.
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const manager = new SceneManager(
-      canvasRef.current,
-      tiles,
-      (tileId) => {
-        selectTile(tileId);
-      }
-    );
+    const manager = new SceneManager(canvas, tiles, (tileId) => {
+      selectTile(tileId);
+    });
     managerRef.current = manager;
 
     // Handle internal hover event broadcasted from SceneManager
@@ -58,24 +58,25 @@ export const GameCanvas: React.FC = () => {
       setHoveredTileId(tileId);
     };
 
-    canvasRef.current.addEventListener('tile-hover', handleHoverEvent);
+    canvas.addEventListener('tile-hover', handleHoverEvent);
 
     // Setup window resize observer
     const resizeObserver = new ResizeObserver(() => {
       manager.handleResize();
     });
-    if (canvasRef.current.parentElement) {
-      resizeObserver.observe(canvasRef.current.parentElement);
+    if (canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
     }
 
     return () => {
       resizeObserver.disconnect();
-      if (canvasRef.current) {
-        canvasRef.current.removeEventListener('tile-hover', handleHoverEvent);
-      }
+      // `canvas` is captured above, so this cleanup uses the same node the
+      // listener was attached to (not a possibly-changed canvasRef.current).
+      canvas.removeEventListener('tile-hover', handleHoverEvent);
       manager.destroy();
       managerRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update tiles mesh when state tiles change (e.g. built or demolished)

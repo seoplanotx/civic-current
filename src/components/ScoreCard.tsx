@@ -1,12 +1,13 @@
 import React from 'react';
 import { useGameStore } from '../store/useGameStore';
-import { 
-  Award, 
-  Flame, 
-  ShieldCheck, 
-  Briefcase, 
-  Leaf, 
-  Heart, 
+import { DailyLeaderboardPanel } from './DailyLeaderboardPanel';
+import {
+  Award,
+  Flame,
+  ShieldCheck,
+  Briefcase,
+  Leaf,
+  Heart,
   DollarSign,
   RotateCcw,
   Sparkles
@@ -14,6 +15,7 @@ import {
 
 export const ScoreCard: React.FC = () => {
   const { state, resetGame } = useGameStore();
+  const dailyChallengeId = useGameStore((s) => s.dailyChallengeId);
   const { gameStatus, failedReason, scores } = state;
 
   if (gameStatus !== 'victory' && gameStatus !== 'failed') return null;
@@ -190,13 +192,20 @@ export const ScoreCard: React.FC = () => {
           {getLegacyDescription(finalScores.title)}
         </p>
 
+        {/* Section 4b: Daily Challenge leaderboard + share — only for daily runs */}
+        {dailyChallengeId && (
+          <div className="w-full">
+            <DailyLeaderboardPanel />
+          </div>
+        )}
+
         {/* Section 5: Replay Trigger */}
         <button
           onClick={() => resetGame()}
           className="w-full mt-7 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-white font-extrabold text-sm py-3.5 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.98] select-none"
         >
           <RotateCcw className="w-4 h-4" />
-          GOVERN ANEW (PLAY AGAIN)
+          {dailyChallengeId ? 'PLAY A FREE CITY' : 'GOVERN ANEW (PLAY AGAIN)'}
         </button>
       </div>
     </div>

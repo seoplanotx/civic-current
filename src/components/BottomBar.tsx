@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { useBuildings, useTerrains } from '../content/hooks';
-import type { BuildingType } from '../types';
+import type { BuildingId } from '../types';
 import {
   Zap, 
   Home, 
@@ -30,8 +30,9 @@ export const BottomBar: React.FC = () => {
 
   const selectedTile = tiles.find((t) => t.id === selectedTileId);
 
-  // Helper to map icons to building types
-  const getBuildingIcon = (type: BuildingType) => {
+  // Helper to map icons to building types. Pack buildings (namespaced ids that
+  // aren't in this switch) fall through to the default bolt icon.
+  const getBuildingIcon = (type: BuildingId) => {
     switch (type) {
       case 'coalPlant':
       case 'gasPlant':
@@ -84,7 +85,7 @@ export const BottomBar: React.FC = () => {
           Quick Build Hotbar
         </span>
         <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pr-1 custom-scrollbar">
-          {(Object.keys(BUILDINGS) as BuildingType[]).map((bType) => {
+          {(Object.keys(BUILDINGS) as BuildingId[]).map((bType) => {
             const def = BUILDINGS[bType];
             const actualCost = def.cost;
 

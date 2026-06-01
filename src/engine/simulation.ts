@@ -1,5 +1,6 @@
-import type { GameState } from '../types';
+import type { GameState, GameEvent } from '../types';
 import { getContentRegistry } from '../content/init';
+import { makeTurnRng, DEFAULT_SEED } from './rng';
 
 /**
  * Calculates all city metrics and returns the next game state.
@@ -11,7 +12,7 @@ import { getContentRegistry } from '../content/init';
 export function simulateTurn(state: GameState, eventChoiceIndex?: number): GameState {
   const registry = getContentRegistry();
   const buildings = registry.getBuildings();
-  let nextState = { ...state };
+  const nextState = { ...state };
 
   // 1. Process Active Event Choice Effects (if any)
   if (nextState.activeEvent && eventChoiceIndex !== undefined) {
@@ -117,7 +118,7 @@ export function simulateTurn(state: GameState, eventChoiceIndex?: number): GameS
   nextState.pollution = clamp(Math.round(basePollution), 0, 100);
 
   // Environment Health: baseline 85, decays with pollution, builds with parks and environment bonuses
-  let rawEnvironment = 85 - nextState.pollution * 0.8 + (counts.park || 0) * 3 + rawEnvironmentBonus;
+  const rawEnvironment = 85 - nextState.pollution * 0.8 + (counts.park || 0) * 3 + rawEnvironmentBonus;
   nextState.environment = clamp(Math.round(rawEnvironment), 0, 100);
 
   // 5. Jobs and Economy (Income vs. Expenses)
@@ -125,7 +126,7 @@ export function simulateTurn(state: GameState, eventChoiceIndex?: number): GameS
   nextState.jobs = clamp(jobsCapacity, 0, nextState.population);
 
   // Income calculations
-  let taxBase = nextState.taxRate * 25 + nextState.population * 0.12;
+  const taxBase = nextState.taxRate * 25 + nextState.population * 0.12;
   nextState.income = Math.round(taxBase + industrialRevenue);
 
   // Expenses calculations
@@ -136,7 +137,7 @@ export function simulateTurn(state: GameState, eventChoiceIndex?: number): GameS
 
   // 6. Public Approval
   // Base 65. Subtract tax penalty, reliability gaps, pollution index, and job shortages. Add approval bonuses.
-  let taxDeviation = nextState.taxRate - 10;
+  const taxDeviation = nextState.taxRate - 10;
   let rawApproval = 65 - taxDeviation * 4 - (100 - nextState.reliability) * 0.45 - nextState.pollution * 0.35 + rawApprovalBonus;
 
   // Unemployment penalty
@@ -155,7 +156,7 @@ export function simulateTurn(state: GameState, eventChoiceIndex?: number): GameS
     growthRate -= (70 - nextState.reliability) * 0.0025; // Blackouts stop immigration
   }
 
-  let popGrowth = Math.floor(nextState.population * growthRate);
+  const popGrowth = Math.floor(nextState.population * growthRate);
   // Ensure we don't drop below 100 or exceed capacity
   nextState.population = clamp(nextState.population + popGrowth, 100, nextState.populationCapacity);
 
@@ -223,8 +224,11 @@ export function simulateTurn(state: GameState, eventChoiceIndex?: number): GameS
     const scores = calculateFinalScorecard(nextState);
     nextState.scores = scores;
   } else {
-    // 12. Trigger Next Event Card if playing
-    nextState.activeEvent = maybeGenerateEvent(nextState);
+    // 12. Trigger Next Event Card if playing.
+    // Derived deterministically from (seed, turn) so the same seed always
+    // produces the same event stream — the foundation of the Daily Challenge.
+    const rng = makeTurnRng(state.seed ?? DEFAULT_SEED, nextState.turn);
+    nextState.activeEvent = maybeGenerateEvent(nextState, rng);
   }
 
   return nextState;
@@ -235,10 +239,13 @@ function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));
 }
 
-function maybeGenerateEvent(state: GameState): any | null {
+function maybeGenerateEvent(
+  state: GameState,
+  rng: () => number
+): GameEvent | null {
   // 30% chance of event happening per turn (unless it's an election year which has high trigger rate)
   const isElectionYear = state.turn % 15 === 0 && state.turn < 45;
-  const roll = Math.random();
+  const roll = rng();
   if (roll > 0.35 && !isElectionYear) {
     return null;
   }
@@ -250,7 +257,7 @@ function maybeGenerateEvent(state: GameState): any | null {
 
   // Weighted random selection
   const totalWeight = availableEvents.reduce((sum, ev) => sum + ev.weight, 0);
-  let randomWeight = Math.random() * totalWeight;
+  let randomWeight = rng() * totalWeight;
 
   for (const event of availableEvents) {
     randomWeight -= event.weight;
@@ -275,7 +282,7 @@ function calculateFinalScorecard(state: GameState) {
     (energySecurity + economicStrength + environmentalHealth + publicApproval + financialScore) / 5
   );
 
-  let title = 'The Mayor Who Meant Well';
+  let title: string;
 
   if (state.gameStatus === 'failed') {
     if (state.failedReason?.includes('Bankrupted')) title = 'Bankrupt Idealist';

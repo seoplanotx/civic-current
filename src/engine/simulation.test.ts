@@ -6,6 +6,7 @@ import { generateMap } from './mapGenerator';
 const createBaseState = (seed = 42): GameState => ({
   turn: 1,
   maxTurns: 50,
+  seed,
   budget: 1500,
   income: 180,
   expenses: 100,
@@ -124,8 +125,8 @@ describe('Civic Current Simulation Logic', () => {
   });
 
   it('should apply stats for new buildings correctly like Hydroelectric Dam', () => {
-    let state = createBaseState();
-    
+    const state = createBaseState();
+
     // Find a river tile and build a hydro dam on it
     const riverTileIndex = state.tiles.findIndex((t) => t.terrainType === 'river');
     expect(riverTileIndex).not.toBe(-1);
@@ -139,6 +140,33 @@ describe('Civic Current Simulation Logic', () => {
     // Jobs: +15 jobs (baseline 800 * (500/800) + 15? Wait, let's see how jobs are calculated in simulation.ts)
     // Actually, let's just make sure it increases from the baseline or is calculated correctly.
     expect(nextState.jobs).toBeGreaterThan(0);
+  });
+
+  it('is fully deterministic: same seed + same moves yields the same event stream', () => {
+    // This is the Daily Challenge guarantee. Two independent playthroughs of the
+    // same seed, taking the identical (empty) action each turn, must produce an
+    // identical sequence of event cards. Before seeding the RNG this failed
+    // because maybeGenerateEvent called Math.random().
+    const run = (seed: number): (string | null)[] => {
+      let state = createStableTestState(seed);
+      const events: (string | null)[] = [];
+      for (let i = 0; i < 25; i++) {
+        // Resolve any active event by always choosing option 0, else end turn.
+        state = state.activeEvent
+          ? simulateTurn(state, 0)
+          : simulateTurn(state);
+        events.push(state.activeEvent?.id ?? null);
+      }
+      return events;
+    };
+
+    const a = run(2026_05_31);
+    const b = run(2026_05_31);
+    expect(a).toEqual(b);
+
+    // A different seed should (with overwhelming likelihood) diverge somewhere.
+    const c = run(1234_56);
+    expect(c).not.toEqual(a);
   });
 
   it('should adjust grid supply output for wind farms on windy hills', () => {

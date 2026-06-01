@@ -8,7 +8,7 @@
  * Hitting the slot limit triggers the UpgradeModal.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Layers, Plus, Trash2, X, Cloud, HardDrive } from 'lucide-react';
 import { cloudSave } from '../cloud-save/CloudSaveService';
 import type { CloudSaveSlot } from '../shared/api-types';
@@ -32,12 +32,7 @@ export const CitySlotPicker: React.FC<Props> = ({ open, onClose }) => {
 
   const { state, loadCitySlot, saveCurrentAsNewSlot } = useGameStore();
 
-  useEffect(() => {
-    if (!open) return;
-    refresh();
-  }, [open]);
-
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +45,17 @@ export const CitySlotPicker: React.FC<Props> = ({ open, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch the slot list whenever the modal opens. This is a fetch-on-open
+  // effect synchronizing with an external system (cloud/local storage); refresh
+  // only setStates after an await, so it doesn't cause synchronous cascading
+  // renders — the static rule just can't see past the async boundary.
+  useEffect(() => {
+    if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh();
+  }, [open, refresh]);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;

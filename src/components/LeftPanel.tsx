@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { useBuildings, useTerrains } from '../content/hooks';
-import type { BuildingType } from '../types';
+import type { BuildingId } from '../types';
 import { Hammer, Trash2, HelpCircle } from 'lucide-react';
 
 export const LeftPanel: React.FC = () => {
@@ -29,11 +29,12 @@ export const LeftPanel: React.FC = () => {
 
   const terrain = TERRAINS[selectedTile.terrainType];
 
-  // Compile list of buildable structures for this specific terrain type
-  const buildableOptions = Object.keys(BUILDINGS).filter((key) => {
-    const bType = key as BuildingType;
-    return BUILDINGS[bType].allowedTiles.includes(selectedTile.terrainType);
-  }) as BuildingType[];
+  // Compile list of buildable structures for this specific terrain type.
+  // BUILDINGS is the merged registry view, so this already includes any owned
+  // pack buildings — ids are plain strings (BuildingId).
+  const buildableOptions: BuildingId[] = Object.keys(BUILDINGS).filter((key) =>
+    BUILDINGS[key].allowedTiles.includes(selectedTile.terrainType)
+  );
 
   return (
     <div className="w-[310px] bg-slate-950/40 backdrop-blur-xl border border-white/5 rounded-2xl p-5 flex flex-col shadow-xl min-h-[480px]">

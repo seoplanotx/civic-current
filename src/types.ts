@@ -31,12 +31,23 @@ export type BuildingType =
   | 'datacenter'
   | 'supercapacitor';
 
+/**
+ * A building identifier as stored on a tile or passed to a build action.
+ *
+ * Base-game buildings are the `BuildingType` literals above, but content packs
+ * introduce additional namespaced ids at runtime (e.g. "throwback.strip_mall",
+ * "tomorrow.ai_datacenter"). The ContentRegistry already keys buildings by
+ * `string`, so anywhere a tile can legitimately hold pack content we type it as
+ * the wider `BuildingId` rather than the narrow base union.
+ */
+export type BuildingId = BuildingType | (string & {});
+
 export interface Tile {
   id: string;
   x: number;
   z: number;
   terrainType: TerrainType;
-  building: BuildingType | null;
+  building: BuildingId | null;
 }
 
 /** Re-exported here so all content-layer code can import everything from one place. */
@@ -93,6 +104,13 @@ export interface GameEvent {
 export interface GameState {
   turn: number;
   maxTurns: number;
+
+  /**
+   * Base seed for this run. Drives both map generation and the per-turn event
+   * RNG, so a given seed + the same player moves always yields the same game.
+   * This is what makes the Daily Challenge fair and comparable across players.
+   */
+  seed: number;
 
   budget: number;
   income: number;

@@ -6,31 +6,60 @@ import { RightPanel } from './components/RightPanel';
 import { BottomBar } from './components/BottomBar';
 import { ScoreCard } from './components/ScoreCard';
 import { AccountMenu } from './components/AccountMenu';
+import { DailyChallengeButton } from './components/DailyChallengeButton';
+import { useGameStore } from './store/useGameStore';
 import { HelpCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
-const App: React.FC = () => {
-  const [showTutorial, setShowTutorial] = useState(true);
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [purchaseToast, setPurchaseToast] = useState<string | null>(null);
+/** True when the page was opened via a shared "?daily=…" deep link. */
+function hasDailyDeepLink(): boolean {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).has('daily');
+}
 
-  // Detect Stripe redirect-back and surface a confirmation toast. Entitlements
-  // are refreshed by AuthBridge whenever the Clerk session reloads, so by the
-  // time the user sees this toast their `usePremium()` is already true.
+/** Initial post-purchase toast derived from the Stripe redirect-back query param. */
+function initialPurchaseToast(): string | null {
+  if (typeof window === 'undefined') return null;
+  const premium = new URLSearchParams(window.location.search).get('premium');
+  if (premium === 'success') return 'Premium unlocked! Welcome to Civic Current Premium.';
+  if (premium === 'cancel') return 'Purchase cancelled — no charge was made.';
+  return null;
+}
+
+const App: React.FC = () => {
+  // A shared daily link skips the tutorial — derive that at init so we never
+  // setState inside the effect just to hide it.
+  const [showTutorial, setShowTutorial] = useState(() => !hasDailyDeepLink());
+  const [tutorialStep, setTutorialStep] = useState(0);
+  // Derive the toast lazily from the URL so the effect only handles side
+  // effects (clearing the query, auto-dismiss timer) — no synchronous setState.
+  const [purchaseToast, setPurchaseToast] = useState<string | null>(initialPurchaseToast);
+  const startDailyChallenge = useGameStore((s) => s.startDailyChallenge);
+
+  // Deep link: a shared "?daily=…" link drops the player straight into today's
+  // challenge. startDailyChallenge() is a store action (external system), not a
+  // React setState, so this effect synchronizes without cascading renders.
+  useEffect(() => {
+    if (!hasDailyDeepLink()) return;
+    startDailyChallenge();
+    const params = new URLSearchParams(window.location.search);
+    params.delete('daily');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+  }, [startDailyChallenge]);
+
+  // Stripe redirect-back handling. The toast text itself is derived at init
+  // (see initialPurchaseToast); this effect only runs the side effects —
+  // stripping the query param so a refresh doesn't re-trigger, and scheduling
+  // the auto-dismiss. Entitlements are refreshed by AuthBridge when the Clerk
+  // session reloads, so by the time the toast shows, usePremium() is true.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('premium') === 'success') {
-      setPurchaseToast('Premium unlocked! Welcome to Civic Current Premium.');
-      // Strip query so refreshes don't re-trigger
-      window.history.replaceState({}, '', window.location.pathname);
-      const timer = setTimeout(() => setPurchaseToast(null), 6000);
-      return () => clearTimeout(timer);
-    }
-    if (params.get('premium') === 'cancel') {
-      setPurchaseToast('Purchase cancelled — no charge was made.');
-      window.history.replaceState({}, '', window.location.pathname);
-      const timer = setTimeout(() => setPurchaseToast(null), 4000);
-      return () => clearTimeout(timer);
-    }
+    const premium = params.get('premium');
+    if (premium !== 'success' && premium !== 'cancel') return;
+
+    window.history.replaceState({}, '', window.location.pathname);
+    const timer = setTimeout(() => setPurchaseToast(null), premium === 'success' ? 6000 : 4000);
+    return () => clearTimeout(timer);
   }, []);
 
   const tutorialPrompts = [
@@ -62,6 +91,11 @@ const App: React.FC = () => {
       {/* Dynamic Ambient Blur Glows in Background */}
       <div className="absolute top-[-10%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[10%] w-[35vw] h-[35vw] rounded-full bg-teal-500/10 blur-[120px] pointer-events-none" />
+
+      {/* Daily Challenge entry point — floats top-left */}
+      <div className="absolute top-4 left-6 z-30">
+        <DailyChallengeButton />
+      </div>
 
       {/* Account menu — floats top-right, above the dashboard grid */}
       <div className="absolute top-4 right-6 z-30">

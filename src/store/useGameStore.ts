@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import type { GameState, BuildingType } from '../types';
+import type { GameState, BuildingId } from '../types';
 import { generateMap } from '../engine/mapGenerator';
 import { simulateTurn } from '../engine/simulation';
 import { getContentRegistry } from '../content/init';
 import { cloudSave, LOCAL_SLOT_ID } from '../cloud-save/CloudSaveService';
+import { dailySeed, dailyChallengeId as getDailyChallengeId } from '../shared/daily';
 
 interface GameStore {
   state: GameState;
@@ -12,6 +13,11 @@ interface GameStore {
   currentSlotId: string | null;
   /** Human-readable name of the currently-loaded city. */
   currentSlotName: string | null;
+  /**
+   * Challenge id (e.g. "2026-05-31") when the current run is today's Daily
+   * Challenge; null for free play. Drives leaderboard submission on game over.
+   */
+  dailyChallengeId: string | null;
 
   // Audio synthesizer ref
   playSound: (type: 'build' | 'demolish' | 'click' | 'policy' | 'endTurn' | 'warning' | 'victory' | 'failed') => void;
@@ -20,11 +26,13 @@ interface GameStore {
 
   // Actions
   selectTile: (tileId: string | null) => void;
-  buildOnSelected: (buildingType: BuildingType) => void;
+  buildOnSelected: (buildingType: BuildingId) => void;
   demolishOnSelected: () => void;
   resolveEventChoice: (choiceIndex: number) => void;
   endTurn: () => void;
   resetGame: (seed?: number) => void;
+  /** Start (or restart) today's Daily Challenge — same map + events for everyone. */
+  startDailyChallenge: () => void;
 
   // Cloud-aware save/load. Legacy single-slot save kept as fallback for
   // anonymous users until they sign in and migrate to cloud.
@@ -41,6 +49,7 @@ const LOCAL_STORAGE_KEY = 'civic_current_save';
 const initialGameState = (seed: number = 42): GameState => ({
   turn: 1,
   maxTurns: 50,
+  seed,
   budget: 1500,
   income: 180,
   expenses: 100,
@@ -72,7 +81,11 @@ function synthSound(type: string, enabled: boolean) {
   if (!enabled) return;
   try {
     if (!audioCtx) {
-      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      audioCtx = new Ctx();
     }
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
@@ -166,6 +179,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   state: initialGameState(),
   currentSlotId: null,
   currentSlotName: null,
+  dailyChallengeId: null,
   soundEnabled: true,
 
   playSound: (type) => {
@@ -200,7 +214,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const def = getContentRegistry().getBuilding(buildingType);
     if (!def) return; // Unknown building id (pack unloaded or typo)
 
-    let actualCost = def.cost;
+    const actualCost = def.cost;
 
     if (state.budget < actualCost) return; // Can't afford
     if (!def.allowedTiles.includes(tile.terrainType)) return; // Invalid terrain
@@ -300,6 +314,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
       state: initialGameState(seed ?? Math.floor(Math.random() * 1000)),
       currentSlotId: null,
       currentSlotName: null,
+      dailyChallengeId: null,
+    });
+  },
+
+  startDailyChallenge: () => {
+    get().playSound('policy');
+    const today = new Date();
+    set({
+      state: initialGameState(dailySeed(today)),
+      currentSlotId: null,
+      currentSlotName: null,
+      dailyChallengeId: getDailyChallengeId(today),
     });
   },
 
@@ -387,11 +413,15 @@ export { LOCAL_SLOT_ID };
 
 // Expose deterministic test hooks in window (Portfolio gold!)
 if (typeof window !== 'undefined') {
-  (window as any).render_game_to_text = () => {
+  const testHooks = window as unknown as {
+    render_game_to_text: () => string;
+    advanceTime: () => void;
+  };
+  testHooks.render_game_to_text = () => {
     const storeState = useGameStore.getState().state;
     return JSON.stringify(storeState, null, 2);
   };
-  (window as any).advanceTime = () => {
+  testHooks.advanceTime = () => {
     useGameStore.getState().endTurn();
   };
 }
