@@ -119,17 +119,19 @@ export const GameCanvas: React.FC = () => {
 
   return (
     <div className="cc-blueprint cc-pinned relative w-full h-full overflow-hidden flex-1">
-      {/* Blueprint title strip pinned above the live board */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 border-b border-[color:var(--cc-bp-line)] pointer-events-none">
-        <span className="cc-mono text-[12px] font-bold tracking-[2px] text-[#eaf3ff]">◇ GRID SITE PLAN — SECTOR 7</span>
-        <span className="cc-mono text-[10px] tracking-[1px] text-[rgba(191,224,255,0.6)]">SCALE 1:2000 · 10×10</span>
+      {/* Blueprint title strip pinned above the live board. The drafting-tool
+          tray lives bottom-right so it never crowds this strip; the SCALE
+          sub-label hides on small screens to keep the title clear. */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between gap-2 px-4 py-2 border-b border-[color:var(--cc-bp-line)] pointer-events-none">
+        <span className="cc-mono text-[11px] sm:text-[12px] font-bold tracking-[2px] text-[#eaf3ff] truncate">◇ GRID SITE PLAN — SECTOR 7</span>
+        <span className="cc-mono text-[10px] tracking-[1px] text-[rgba(191,224,255,0.6)] hidden sm:inline shrink-0">SCALE 1:2000 · 10×10</span>
       </div>
 
       {/* Three.js Canvas (colorful tiles — unchanged) */}
       <canvas ref={canvasRef} className="w-full h-full block touch-none" />
 
-      {/* Floating Canvas Controls — drafting-tool tray */}
-      <div className="absolute top-3 right-3 flex items-center gap-1 bg-[rgba(15,48,87,0.78)] backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-[rgba(150,190,230,0.3)] shadow-lg">
+      {/* Floating Canvas Controls — drafting-tool tray, bottom-right */}
+      <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-[rgba(15,48,87,0.78)] backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-[rgba(150,190,230,0.3)] shadow-lg">
         <button onClick={() => setSlotPickerOpen(true)} title="Cities — switch, save, or load a city"
           className="p-1.5 rounded-md hover:bg-white/10 text-[color:var(--cc-cyan)] hover:text-white transition-colors flex items-center gap-1">
           <CcIcon name="layers" className="w-4 h-4" />
@@ -166,11 +168,6 @@ export const GameCanvas: React.FC = () => {
           <span className="cc-marker font-bold text-[color:var(--cc-ink)]">Grid overload — blackouts in residential sectors</span>
         </div>
       )}
-
-      {/* Drafting watermark */}
-      <div className="absolute bottom-3 right-4 cc-mono text-[10px] text-[rgba(191,224,255,0.45)] select-none">
-        DWG. GP-07 · WEBGL2
-      </div>
     </div>
   );
 };

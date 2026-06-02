@@ -27,9 +27,9 @@ export const BottomBar: React.FC = () => {
   const selectedTile = tiles.find((t) => t.id === selectedTileId);
 
   return (
-    <div className="cc-sticky cc-white cc-rot-1 w-full p-4 flex items-center justify-between gap-6">
+    <div className="cc-sticky cc-white cc-rot-1 w-full p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
       {/* Quick build hotbar */}
-      <div className="flex flex-col gap-1.5 flex-1 max-w-[75%]">
+      <div className="flex flex-col gap-1.5 flex-1 w-full min-w-0 sm:max-w-[75%]">
         <span className="cc-mono text-[10px] font-bold uppercase tracking-wide text-[color:var(--cc-ink-soft)]">
           Quick-build hotbar
         </span>
@@ -74,7 +74,7 @@ export const BottomBar: React.FC = () => {
       </div>
 
       {/* End turn */}
-      <div className="shrink-0 flex items-center">
+      <div className="shrink-0 flex items-center justify-center sm:justify-end">
         {activeEvent ? (
           <div className="cc-sticky cc-p cc-rot1 px-4 py-3 flex items-center gap-2 max-w-[220px]">
             <CcIcon name="warn" className="w-4 h-4 text-[color:var(--cc-red)] shrink-0" />

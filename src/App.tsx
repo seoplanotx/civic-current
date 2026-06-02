@@ -132,36 +132,39 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="cc-wall min-h-screen w-full text-[color:var(--cc-ink)] flex flex-col p-4 md:p-6 antialiased overflow-hidden select-none">
+    /* Small screens scroll the page vertically (html/body handle it); on lg+
+       the fixed dashboard fits the viewport so we lock overflow. */
+    <div className="cc-wall min-h-screen w-full text-[color:var(--cc-ink)] flex flex-col p-3 sm:p-4 md:p-6 antialiased lg:overflow-hidden select-none">
 
       {/* Shared SVG defs (roughen filters + hand-drawn icon sprite) */}
       <PlanningWallDefs />
 
-      {/* Daily Challenge entry point — floats top-left */}
-      <div className="absolute top-4 left-6 z-30">
-        <DailyChallengeButton />
-      </div>
-
-      {/* Account menu + shop + themes — float top-right, above the dashboard grid */}
-      <div className="absolute top-4 right-6 z-30 flex items-center gap-2">
-        <ThemesButton />
-        <ShopButton />
-        <AccountMenu />
-      </div>
-
       {/* Main Content Layout Grid */}
-      <div className="max-w-[1560px] mx-auto w-full flex-1 flex flex-col gap-4">
+      <div className="max-w-[1560px] mx-auto w-full flex-1 flex flex-col gap-3 sm:gap-4">
+
+        {/* Toolbar row — controls live in normal flow so they never overlap the
+            stat cluster or title. Daily on the left, shop/themes/account right. */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <DailyChallengeButton />
+          <div className="flex items-center gap-2">
+            <ThemesButton />
+            <ShopButton />
+            <AccountMenu />
+          </div>
+        </div>
 
         {/* Top-Bar row */}
         <TopBar />
 
-        {/* Center Canvas + Panels Row */}
-        <div className="flex-1 flex gap-4 min-h-[500px]">
+        {/* Center Canvas + Panels Row — stacks vertically on small screens,
+            three columns on lg+. */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:min-h-[500px]">
           {/* Left Inspector */}
           <LeftPanel />
 
-          {/* Center 3D Viewport wrapper */}
-          <div className="flex-1 flex flex-col relative">
+          {/* Center 3D Viewport wrapper — needs an explicit height when stacked
+              (no flex row to size it), full height in the lg row. */}
+          <div className="flex flex-col relative w-full h-[60vh] min-h-[360px] lg:flex-1 lg:h-auto">
             <GameCanvas />
           </div>
 

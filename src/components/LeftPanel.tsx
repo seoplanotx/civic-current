@@ -28,7 +28,7 @@ export const LeftPanel: React.FC = () => {
 
   if (!selectedTile) {
     return (
-      <div className="cc-sticky cc-y cc-rot-1 w-[310px] p-5 flex flex-col justify-center items-center text-center min-h-[480px]">
+      <div className="cc-sticky cc-y cc-rot-1 w-full lg:w-[310px] p-5 flex flex-col justify-center items-center text-center min-h-[200px] lg:min-h-[480px]">
         <div className="text-[color:var(--cc-ink-soft)] mb-4 opacity-70">
           <CcIcon name="help" className="w-12 h-12" />
         </div>
@@ -48,7 +48,7 @@ export const LeftPanel: React.FC = () => {
   );
 
   return (
-    <div className="cc-sticky cc-y cc-rot-1 relative w-[310px] p-5 flex flex-col min-h-[480px]">
+    <div className="cc-sticky cc-y cc-rot-1 relative w-full lg:w-[310px] p-5 flex flex-col lg:min-h-[480px]">
       <span className="cc-pin" />
 
       {/* Tile header */}

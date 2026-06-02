@@ -37,15 +37,15 @@ const StatNote: React.FC<NoteProps> = ({
     : pin === 'red' ? 'cc-pin'
     : '';
   return (
-    <div className={`cc-sticky cc-${paper} ${rot} ${tape ? 'cc-tape' : ''} relative px-4 py-3 min-w-[150px]`}>
+    <div className={`cc-sticky cc-${paper} ${rot} ${tape ? 'cc-tape' : ''} relative px-3 py-2.5 sm:px-4 sm:py-3 w-full lg:w-auto lg:min-w-[150px]`}>
       {pin && <span className={pinClass} />}
       <div className="cc-label">
         <CcIcon name={icon} /> {label}
       </div>
-      <div className="cc-marker font-bold text-[34px] leading-none mt-1.5 mb-1 text-[color:var(--cc-ink)]">
+      <div className="cc-marker font-bold text-[26px] sm:text-[34px] leading-none mt-1 sm:mt-1.5 mb-1 text-[color:var(--cc-ink)]">
         {children}
       </div>
-      {sub && <div className={`cc-hand text-[19px] leading-tight ${subColor}`}>{sub}</div>}
+      {sub && <div className={`cc-hand text-[16px] sm:text-[19px] leading-tight ${subColor}`}>{sub}</div>}
 
       {flagged && (
         <svg
@@ -60,7 +60,7 @@ const StatNote: React.FC<NoteProps> = ({
 };
 
 const Unit: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="text-[17px] font-semibold text-[color:var(--cc-ink-soft)]">{children}</span>
+  <span className="text-[14px] sm:text-[17px] font-semibold text-[color:var(--cc-ink-soft)]">{children}</span>
 );
 
 export const TopBar: React.FC = () => {
@@ -98,24 +98,21 @@ export const TopBar: React.FC = () => {
         </div>
       )}
 
-      <div className="w-full flex items-start justify-between gap-4 flex-wrap">
+      <div className="w-full flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-4 lg:flex-wrap">
         {/* Title lockup */}
         <div className="relative shrink-0">
           <span className="cc-masking-tape">
-            <h1 className="cc-marker font-bold text-[40px] leading-none text-[color:var(--cc-ink)] m-0">
+            <h1 className="cc-marker font-bold text-[32px] sm:text-[40px] leading-none text-[color:var(--cc-ink)] m-0">
               Civic <span className="text-[color:var(--cc-red)]">Current</span>
             </h1>
           </span>
-          <div className="cc-hand font-semibold text-[24px] text-[color:var(--cc-blue)] mt-1.5 ml-1.5">
+          <div className="cc-hand font-semibold text-[20px] sm:text-[24px] text-[color:var(--cc-blue)] mt-1.5 ml-1.5">
             keep the lights on →
           </div>
-          <svg className="cc-rough pointer-events-none absolute" style={{ left: '4px', top: '50px', width: '300px', height: '22px' }}>
-            <path d="M6,13 C80,4 200,4 294,11" fill="none" stroke="#d8412f" strokeWidth="3.2" strokeLinecap="round" />
-          </svg>
         </div>
 
-        {/* Stat sticky cluster */}
-        <div className="flex items-start gap-x-5 gap-y-6 flex-wrap justify-end flex-1">
+        {/* Stat sticky cluster — 2-col grid on mobile, 3-col on sm, flex-wrap on lg */}
+        <div className="w-full lg:w-auto grid grid-cols-2 sm:grid-cols-3 lg:flex lg:items-start gap-3 sm:gap-x-5 sm:gap-y-6 lg:flex-wrap lg:justify-end lg:flex-1">
           <StatNote paper="y" rot="cc-rot-2" tape icon="coin" label="Treasury"
             sub={`${isDeficit ? '▼' : '▲'} ${isDeficit ? '-' : '+'}$${Math.abs(surplus)} / turn`}
             subTone={isDeficit ? 'warn' : 'up'}>
@@ -161,8 +158,8 @@ export const TopBar: React.FC = () => {
             {politicalCapital}<Unit> / 20</Unit>
           </StatNote>
 
-          {/* Turn tracker — checklist note */}
-          <div className="cc-sticky cc-b cc-rot2 relative px-4 py-3 w-[230px]">
+          {/* Turn tracker — checklist note (spans full width in the mobile grid) */}
+          <div className="cc-sticky cc-b cc-rot2 relative px-4 py-3 col-span-2 sm:col-span-3 lg:col-span-1 w-full lg:w-[230px]">
             <span className="cc-pin cc-pin-blue" />
             <div className="cc-label"><CcIcon name="flag" solid /> Term · turn {turn}</div>
             <div className="cc-marker font-bold text-[22px] leading-none mt-1.5 text-[color:var(--cc-ink)]">

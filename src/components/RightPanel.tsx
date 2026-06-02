@@ -49,7 +49,7 @@ export const RightPanel: React.FC = () => {
     : 'text-[color:var(--cc-blue)]';
 
   return (
-    <div className="cc-sticky cc-white cc-rot1 relative w-[310px] p-5 flex flex-col min-h-[480px]">
+    <div className="cc-sticky cc-white cc-rot1 relative w-full lg:w-[310px] p-5 flex flex-col lg:min-h-[480px]">
       <span className="cc-pin cc-pin-blue" />
 
       <div className="flex items-center gap-2.5 border-b border-[rgba(37,48,58,0.12)] pb-3">
