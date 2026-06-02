@@ -1,5 +1,49 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   Civic Current — "Planning Wall" design system
+   Blueprint × sticky-notes × whiteboard-doodles. Reusable primitives the
+   components compose. The 3D board keeps its own colorful tiles; this styles
+   the surrounding UI chrome.
+   ========================================================================== */
+
+:root {
+  /* Wall / whiteboard */
+  --cc-wall: #e9ecef;
+  --cc-grid: rgba(80, 110, 140, 0.10);
+  --cc-grid-bold: rgba(80, 110, 140, 0.16);
+  --cc-frame: #c2c7cd;
+
+  /* Ink */
+  --cc-ink: #25303a;
+  --cc-ink-soft: #5b6670;
+  --cc-red: #d8412f;
+  --cc-blue: #2f6db0;
+  --cc-green: #2e8b57;
+
+  /* Sticky-note papers (+ darker bottom-lip per note) */
+  --cc-yellow: #ffe25a;   --cc-yellow-d: #f1ce3e;
+  --cc-pink:   #ff9fb2;   --cc-pink-d:   #f07f95;
+  --cc-sky:    #9ed2ff;   --cc-sky-d:    #7cbcf2;
+  --cc-mint:   #aee8b4;   --cc-mint-d:   #8ed79a;
+  --cc-orange: #ffc178;   --cc-orange-d: #f3a651;
+  --cc-tape: rgba(225, 220, 190, 0.7);
+
+  /* Blueprint */
+  --cc-bp: #123a63;
+  --cc-bp-2: #0f3057;
+  --cc-bp-line: rgba(180, 212, 245, 0.34);
+  --cc-bp-line2: rgba(180, 212, 245, 0.14);
+  --cc-cyan: #bfe0ff;
+  --cc-cyan-bright: #7cc0ff;
+  --cc-amber: #ffb84d;
+
+  /* Type */
+  --cc-font-marker: 'Shantell Sans', system-ui, sans-serif;
+  --cc-font-hand: 'Caveat', cursive;
+  --cc-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
 /* Resets */
 html, body, #root {
   margin: 0;
@@ -7,38 +51,239 @@ html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #020617; /* slate-950 */
+}
+
+body {
+  color: var(--cc-ink);
+  font-family: var(--cc-font-marker);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The whiteboard / planning wall background (graph-paper + soft vignette) */
+.cc-wall {
+  background-color: var(--cc-wall);
+  background-image:
+    linear-gradient(var(--cc-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cc-grid) 1px, transparent 1px),
+    linear-gradient(var(--cc-grid-bold) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cc-grid-bold) 1px, transparent 1px),
+    radial-gradient(120% 90% at 50% -10%, #fbfcfd 0%, var(--cc-wall) 55%, #e0e4e8 100%);
+  background-size: 28px 28px, 28px 28px, 140px 140px, 140px 140px, 100% 100%;
+}
+
+/* ---- Typography helpers ---- */
+.cc-hand   { font-family: var(--cc-font-hand); }
+.cc-marker { font-family: var(--cc-font-marker); }
+.cc-mono   { font-family: var(--cc-font-mono); }
+
+/* Hand-drawn roughen filters live in <PlanningWallDefs/>; apply via class. */
+.cc-rough  { filter: url(#cc-rough); }
+.cc-rough2 { filter: url(#cc-rough2); }
+
+/* ---- Sticky notes ---- */
+.cc-sticky {
+  position: relative;
+  background: var(--cc-yellow);
+  box-shadow: 0 10px 18px rgba(40, 50, 60, 0.16), 0 2px 5px rgba(40, 50, 60, 0.12);
+  border-radius: 2px 2px 5px 5px;
+}
+.cc-sticky::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 9px;
+  background: var(--cc-yellow-d);
+  border-radius: 0 0 5px 5px;
+  opacity: 0.65;
+  pointer-events: none;
+}
+/* tape strip across the top */
+.cc-sticky.cc-tape::before {
+  content: "";
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 80px; height: 22px;
+  background: var(--cc-tape);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  border-left: 1px dashed rgba(0, 0, 0, 0.06);
+  border-right: 1px dashed rgba(0, 0, 0, 0.06);
+  z-index: 2;
+}
+
+/* paper color variants */
+.cc-y { background: var(--cc-yellow); } .cc-y::after { background: var(--cc-yellow-d); }
+.cc-p { background: var(--cc-pink); }   .cc-p::after { background: var(--cc-pink-d); }
+.cc-b { background: var(--cc-sky); }    .cc-b::after { background: var(--cc-sky-d); }
+.cc-g { background: var(--cc-mint); }   .cc-g::after { background: var(--cc-mint-d); }
+.cc-o { background: var(--cc-orange); } .cc-o::after { background: var(--cc-orange-d); }
+.cc-white { background: #fbf9f2; }      .cc-white::after { background: #ece7d6; }
+
+/* tilt utilities */
+.cc-rot-3  { transform: rotate(-2.6deg); }
+.cc-rot-2  { transform: rotate(-1.8deg); }
+.cc-rot-1  { transform: rotate(-1deg); }
+.cc-rot1   { transform: rotate(1.1deg); }
+.cc-rot2   { transform: rotate(1.9deg); }
+.cc-rot3   { transform: rotate(2.6deg); }
+
+/* ---- Pushpin ---- */
+.cc-pin {
+  position: absolute;
+  top: -9px; left: 50%;
+  transform: translateX(-50%);
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8a8a, #d8412f 60%, #a52a1c);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.3);
+  z-index: 3;
+}
+.cc-pin.cc-pin-blue  { background: radial-gradient(circle at 35% 30%, #9ec9ff, #2f6db0 60%, #1d4a80); }
+.cc-pin.cc-pin-green { background: radial-gradient(circle at 35% 30%, #b8efbf, #2e8b57 60%, #1f6b41); }
+
+/* ---- Label (mono, small-caps style) ---- */
+.cc-label {
+  font-family: var(--cc-font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cc-ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- Hand-drawn icon ---- */
+.cc-ico {
+  width: 1em; height: 1em;
+  display: inline-block;
+  vertical-align: -0.12em;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cc-ico.cc-ico-solid { fill: currentColor; stroke: none; }
+
+/* ---- Masking-tape header lockup ---- */
+.cc-masking-tape {
+  display: inline-block;
+  background: var(--cc-tape);
+  padding: 6px 22px 4px;
+  transform: rotate(-1.5deg);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+  border-left: 1px dashed rgba(0, 0, 0, 0.07);
+  border-right: 1px dashed rgba(0, 0, 0, 0.07);
+}
+
+/* ---- Blueprint panel ---- */
+.cc-blueprint {
+  position: relative;
+  border-radius: 5px;
+  color: var(--cc-cyan);
+  background:
+    linear-gradient(var(--cc-bp-line2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cc-bp-line2) 1px, transparent 1px),
+    linear-gradient(135deg, var(--cc-bp) 0%, var(--cc-bp-2) 100%);
+  background-size: 22px 22px, 22px 22px, 100% 100%;
+  box-shadow: 0 18px 30px rgba(20, 40, 70, 0.28), 0 4px 8px rgba(20, 40, 70, 0.2);
+  border: 1px solid rgba(150, 190, 230, 0.25);
+}
+/* pinned-corner rivets */
+.cc-blueprint.cc-pinned::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 14px 14px, rgba(255, 255, 255, 0.18) 2px, transparent 3px),
+    radial-gradient(circle at calc(100% - 14px) 14px, rgba(255, 255, 255, 0.18) 2px, transparent 3px),
+    radial-gradient(circle at 14px calc(100% - 14px), rgba(255, 255, 255, 0.18) 2px, transparent 3px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), rgba(255, 255, 255, 0.18) 2px, transparent 3px);
+}
+
+/* ---- Hand-drawn marker button ----
+   Usage: <button class="cc-btn"><svg class="cc-btn-box cc-rough">…rect…</svg>Label</button>
+   The SVG rect is the wobbly marker outline; tint via inline fill/stroke. */
+.cc-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--cc-font-marker);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--cc-ink);
+  background: transparent;
+  border: none;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.cc-btn:hover { transform: translateY(-1px); }
+.cc-btn:active { transform: scale(0.97); }
+.cc-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.cc-btn:disabled:hover { transform: none; }
+.cc-btn-box {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  pointer-events: none;
+}
+.cc-btn-label { position: relative; z-index: 1; }
+
+/* ---- "Operational" rubber stamp ---- */
+.cc-stamp {
+  font-family: var(--cc-font-hand);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--cc-green);
+  border: 2px solid var(--cc-green);
+  border-radius: 6px;
+  padding: 1px 10px;
+  transform: rotate(-6deg);
+  display: inline-block;
+}
+
+/* ---- Modal backdrop (soft, like dimming the room) ---- */
+.cc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(31, 38, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+/* ---- Coffee-ring flourish ---- */
+.cc-coffee {
+  position: absolute;
+  width: 92px; height: 92px;
+  border-radius: 50%;
+  border: 7px solid rgba(120, 72, 36, 0.13);
+  pointer-events: none;
 }
 
 /* Custom modern slim scrollbar styling */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(37, 48, 58, 0.18);
   border-radius: 9999px;
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(37, 48, 58, 0.3); }
 
 /* Pulse animation utility */
 @keyframes softPulse {
-  0%, 100% {
-    opacity: 0.9;
-  }
-  50% {
-    opacity: 0.55;
-  }
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.55; }
 }
-
 .animate-pulse-slow {
   animation: softPulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

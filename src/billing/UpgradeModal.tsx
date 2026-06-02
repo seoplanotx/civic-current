@@ -12,9 +12,9 @@
 
 import React, { useState } from 'react';
 import { useAuth, SignInButton } from '@clerk/clerk-react';
-import { Sparkles, X, Cloud, Layers, Save } from 'lucide-react';
 import { startPremiumCheckout } from './checkout';
 import { isClerkConfigured } from '../auth/ClerkProvider';
+import { CcIcon } from '../components/PlanningWallDefs';
 
 interface Props {
   open: boolean;
@@ -25,22 +25,22 @@ interface Props {
 
 const FEATURES = [
   {
-    icon: <Layers className="w-4 h-4 text-indigo-400" />,
+    icon: <CcIcon name="layers" className="text-[color:var(--cc-blue)]" />,
     title: '3 persistent cities',
     text: 'Save and switch between three ongoing terms across devices.',
   },
   {
-    icon: <Cloud className="w-4 h-4 text-teal-400" />,
+    icon: <CcIcon name="cloud" className="text-[color:var(--cc-green)]" />,
     title: 'Cloud save & sync',
     text: 'Your cities follow you between laptop, phone, and tablet.',
   },
   {
-    icon: <Sparkles className="w-4 h-4 text-amber-400" />,
+    icon: <CcIcon name="star" solid className="text-[color:var(--cc-red)]" />,
     title: 'All launch cosmetics',
     text: 'Every base building theme, unlocked permanently.',
   },
   {
-    icon: <Save className="w-4 h-4 text-emerald-400" />,
+    icon: <CcIcon name="crown" className="text-[color:var(--cc-blue)]" />,
     title: 'Founder badge',
     text: 'A permanent mark on your leaderboard profile.',
   },
@@ -55,14 +55,12 @@ export const UpgradeModal: React.FC<Props> = ({ open, onClose, reason }) => {
   if (!isClerkConfigured) {
     return (
       <Backdrop onClose={onClose}>
-        <div className="text-slate-200">
-          <Header onClose={onClose} reason="Premium features require auth setup" />
-          <p className="text-xs text-slate-300 leading-relaxed mt-4">
-            Sign-in and purchases are not configured in this build. Set
-            <code className="mx-1 text-indigo-300">VITE_CLERK_PUBLISHABLE_KEY</code>
-            and the Stripe env vars to enable the premium unlock.
-          </p>
-        </div>
+        <Header onClose={onClose} reason="Premium features require auth setup" />
+        <p className="text-[12.5px] text-[color:var(--cc-ink)] opacity-85 leading-relaxed mt-4">
+          Sign-in and purchases are not configured in this build. Set
+          <code className="cc-mono mx-1 text-[11px] text-[color:var(--cc-blue)]">VITE_CLERK_PUBLISHABLE_KEY</code>
+          and the Stripe env vars to enable the premium unlock.
+        </p>
       </Backdrop>
     );
   }
@@ -104,50 +102,54 @@ const UpgradeModalInner: React.FC<InnerProps> = ({
   return (
     <Backdrop onClose={onClose}>
       <Header onClose={onClose} reason={reason} />
-      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+      <p className="text-[12.5px] text-[color:var(--cc-ink)] opacity-85 mt-3 leading-relaxed">
         A single one-time payment. No subscription, no recurring charges. Premium
         stays on your account forever.
       </p>
-      <div className="mt-5 flex flex-col gap-2">
+      <div className="mt-5 flex flex-col gap-2.5">
         {FEATURES.map((f) => (
           <div
             key={f.title}
-            className="flex items-start gap-3 bg-slate-900/60 border border-white/5 rounded-xl p-3"
+            className="flex items-start gap-3 cc-sticky cc-white rounded-md p-3"
           >
-            <div className="mt-0.5 shrink-0">{f.icon}</div>
+            <div className="mt-0.5 shrink-0 text-[18px] leading-none">{f.icon}</div>
             <div className="leading-tight">
-              <div className="text-xs font-extrabold text-slate-100">{f.title}</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">{f.text}</div>
+              <div className="cc-marker text-[13px] font-bold text-[color:var(--cc-ink)]">{f.title}</div>
+              <div className="text-[11.5px] text-[color:var(--cc-ink)] opacity-75 mt-0.5">{f.text}</div>
             </div>
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="mt-4 text-[11px] text-red-300 bg-red-950/40 border border-red-500/30 rounded-lg p-2">
+        <div className="mt-4 cc-marker text-[11.5px] font-bold text-[color:var(--cc-red)] bg-[rgba(216,65,47,0.08)] border border-[rgba(216,65,47,0.3)] rounded-md p-2.5">
           {error}
         </div>
       )}
 
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+      <div className="mt-6 pt-4 border-t border-dashed border-[rgba(37,48,58,0.18)] flex items-center justify-between">
         <div className="flex flex-col leading-none">
-          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-            One-time
-          </span>
-          <span className="text-2xl font-black text-slate-100 mt-1">$14.99</span>
+          <span className="cc-label">One-time</span>
+          <span className="cc-marker text-3xl font-bold text-[color:var(--cc-ink)] mt-1.5">$14.99</span>
         </div>
         {isSignedIn ? (
-          <button
-            onClick={handlePurchase}
-            disabled={busy}
-            className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl disabled:opacity-60 transition-all active:scale-[0.97]"
-          >
-            {busy ? 'Redirecting…' : 'Unlock Premium'}
+          <button onClick={handlePurchase} disabled={busy} className="cc-btn">
+            <svg className="cc-btn-box cc-rough" viewBox="0 0 240 52" preserveAspectRatio="none">
+              <rect x="3" y="3" width="234" height="46" rx="8" fill="rgba(47,109,176,0.18)" stroke="#2f6db0" strokeWidth="3" />
+            </svg>
+            <span className="cc-btn-label flex items-center gap-2 text-[#13325a]">
+              <CcIcon name="bolt" solid /> {busy ? 'Redirecting…' : 'Unlock Premium'}
+            </span>
           </button>
         ) : (
           <SignInButton mode="modal">
-            <button className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl">
-              Sign in to purchase
+            <button className="cc-btn">
+              <svg className="cc-btn-box cc-rough" viewBox="0 0 240 52" preserveAspectRatio="none">
+                <rect x="3" y="3" width="234" height="46" rx="8" fill="rgba(47,109,176,0.18)" stroke="#2f6db0" strokeWidth="3" />
+              </svg>
+              <span className="cc-btn-label flex items-center gap-2 text-[#13325a]">
+                <CcIcon name="login" /> Sign in to purchase
+              </span>
             </button>
           </SignInButton>
         )}
@@ -160,14 +162,12 @@ const Backdrop: React.FC<{ onClose: () => void; children: React.ReactNode }> = (
   onClose,
   children,
 }) => (
-  <div
-    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
-    onClick={onClose}
-  >
+  <div className="cc-backdrop animate-in fade-in duration-200" onClick={onClose}>
     <div
-      className="relative w-full max-w-[440px] bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl"
+      className="cc-sticky cc-y cc-rot-1 relative w-full max-w-[440px] p-7"
       onClick={(e) => e.stopPropagation()}
     >
+      <span className="cc-pin" />
       {children}
     </div>
   </div>
@@ -179,21 +179,19 @@ const Header: React.FC<{ onClose: () => void; reason?: string }> = ({
 }) => (
   <div className="flex items-start justify-between">
     <div>
-      <div className="flex items-center gap-2 text-indigo-400">
-        <Sparkles className="w-4 h-4" />
-        <span className="text-[10px] font-mono font-bold uppercase tracking-widest">
-          {reason ?? 'Civic Current Premium'}
-        </span>
+      <div className="cc-label">
+        <CcIcon name="star" solid className="text-[color:var(--cc-blue)]" />
+        {reason ?? 'Civic Current Premium'}
       </div>
-      <h3 className="text-slate-100 font-black text-lg mt-1">
+      <h3 className="cc-hand font-bold text-[32px] leading-tight text-[color:var(--cc-ink)] mt-1">
         Unlock the full mayor experience
       </h3>
     </div>
     <button
       onClick={onClose}
-      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors"
+      className="shrink-0 p-1.5 rounded-md text-[18px] leading-none text-[color:var(--cc-ink-soft)] hover:text-[color:var(--cc-ink)] hover:bg-[rgba(37,48,58,0.08)] transition-colors"
     >
-      <X className="w-4 h-4" />
+      <CcIcon name="x" />
     </button>
   </div>
 );

@@ -1,12 +1,12 @@
 import React from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { dailyChallengeNumber } from '../shared/daily';
-import { CalendarDays } from 'lucide-react';
+import { CcIcon } from './PlanningWallDefs';
 
 /**
  * Entry point for the Daily Challenge. Everyone who taps this on a given day
  * gets the identical map + deterministic event stream, so scores are directly
- * comparable on the shared leaderboard.
+ * comparable on the shared leaderboard. Styled as a taped index-card tab.
  */
 export const DailyChallengeButton: React.FC = () => {
   const startDailyChallenge = useGameStore((s) => s.startDailyChallenge);
@@ -16,15 +16,13 @@ export const DailyChallengeButton: React.FC = () => {
     <button
       onClick={startDailyChallenge}
       title="Play today's Daily Challenge — same city for everyone"
-      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-extrabold shadow-lg transition-all active:scale-[0.97] ${
-        activeChallenge
-          ? 'bg-amber-500/90 hover:bg-amber-400 border-amber-300/40 text-slate-900'
-          : 'bg-slate-900/60 hover:bg-slate-800/80 border-white/10 text-amber-300 backdrop-blur'
-      }`}
+      className={`cc-sticky cc-rot-1 flex items-center gap-2 px-3 py-2 text-xs font-extrabold transition-all active:scale-[0.97] ${
+        activeChallenge ? 'cc-o' : 'cc-y'
+      } text-[color:var(--cc-ink)]`}
     >
-      <CalendarDays className="w-4 h-4" />
-      <span className="hidden sm:inline">Daily Challenge</span>
-      <span className="opacity-70">#{dailyChallengeNumber(new Date())}</span>
+      <CcIcon name="flag" solid className="w-4 h-4 text-[color:var(--cc-blue)]" />
+      <span className="cc-marker hidden sm:inline">Daily Challenge</span>
+      <span className="cc-hand text-[15px] opacity-80">#{dailyChallengeNumber(new Date())}</span>
     </button>
   );
 };

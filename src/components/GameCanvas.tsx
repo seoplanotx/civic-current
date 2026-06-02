@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { SceneManager } from '../three/SceneManager';
-import { Volume2, VolumeX, Save, RotateCcw, Layers } from 'lucide-react';
 import { CitySlotPicker } from './CitySlotPicker';
 import { useEntitlements } from '../content/hooks';
 import { getActiveTerrainColors } from '../content/cosmetics/theme';
+import { CcIcon } from './PlanningWallDefs';
 
 export const GameCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -118,79 +118,58 @@ export const GameCanvas: React.FC = () => {
   }, [equippedCosmeticId]);
 
   return (
-    <div className="relative w-full h-full bg-slate-900 overflow-hidden flex-1 rounded-2xl border border-white/5 shadow-2xl">
-      {/* Three.js Canvas */}
+    <div className="cc-blueprint cc-pinned relative w-full h-full overflow-hidden flex-1">
+      {/* Blueprint title strip pinned above the live board */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 border-b border-[color:var(--cc-bp-line)] pointer-events-none">
+        <span className="cc-mono text-[12px] font-bold tracking-[2px] text-[#eaf3ff]">◇ GRID SITE PLAN — SECTOR 7</span>
+        <span className="cc-mono text-[10px] tracking-[1px] text-[rgba(191,224,255,0.6)]">SCALE 1:2000 · 10×10</span>
+      </div>
+
+      {/* Three.js Canvas (colorful tiles — unchanged) */}
       <canvas ref={canvasRef} className="w-full h-full block touch-none" />
 
-      {/* Floating Canvas Controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 bg-slate-950/70 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 shadow-lg">
-        {/* Cities (slot picker) button */}
-        <button
-          onClick={() => setSlotPickerOpen(true)}
-          title="Cities — switch, save, or load a city"
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors duration-150 flex items-center gap-1"
-        >
-          <Layers className="w-4 h-4" />
-          {currentSlotName && (
-            <span className="text-[10px] font-bold text-slate-300 max-w-[80px] truncate">
-              {currentSlotName}
-            </span>
-          )}
+      {/* Floating Canvas Controls — drafting-tool tray */}
+      <div className="absolute top-3 right-3 flex items-center gap-1 bg-[rgba(15,48,87,0.78)] backdrop-blur-md px-2.5 py-1.5 rounded-lg border border-[rgba(150,190,230,0.3)] shadow-lg">
+        <button onClick={() => setSlotPickerOpen(true)} title="Cities — switch, save, or load a city"
+          className="p-1.5 rounded-md hover:bg-white/10 text-[color:var(--cc-cyan)] hover:text-white transition-colors flex items-center gap-1">
+          <CcIcon name="layers" className="w-4 h-4" />
+          {currentSlotName && <span className="cc-mono text-[10px] font-bold max-w-[80px] truncate">{currentSlotName}</span>}
         </button>
-
-        {/* Save button */}
-        <button
-          onClick={handleSave}
-          title="Save current run"
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors duration-150"
-        >
-          <Save className="w-4 h-4" />
+        <button onClick={handleSave} title="Save current run" className="p-1.5 rounded-md hover:bg-white/10 text-[color:var(--cc-cyan)] hover:text-white transition-colors">
+          <CcIcon name="save" className="w-4 h-4" />
         </button>
-
-        {/* Load button */}
-        <button
-          onClick={handleLoad}
-          title="Load saved game"
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors duration-150"
-        >
-          <RotateCcw className="w-4 h-4" />
+        <button onClick={handleLoad} title="Load saved game" className="p-1.5 rounded-md hover:bg-white/10 text-[color:var(--cc-cyan)] hover:text-white transition-colors">
+          <CcIcon name="reset" className="w-4 h-4" />
         </button>
-
-        {/* Divider */}
-        <div className="h-4 w-px bg-white/15 mx-1" />
-
-        {/* Sound toggle */}
-        <button
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          title={soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors duration-150"
-        >
-          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        <div className="h-4 w-px bg-[rgba(150,190,230,0.3)] mx-1" />
+        <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? 'Mute sound' : 'Unmute sound'}
+          className="p-1.5 rounded-md hover:bg-white/10 text-[color:var(--cc-cyan)] hover:text-white transition-colors">
+          <CcIcon name={soundEnabled ? 'sound' : 'mute'} className="w-4 h-4" />
         </button>
       </div>
 
       {/* Slot picker modal */}
       <CitySlotPicker open={slotPickerOpen} onClose={() => setSlotPickerOpen(false)} />
 
-      {/* Dynamic Smog Warning Banner */}
+      {/* Smog warning — a taped note on the plan */}
       {pollution > 60 && (
-        <div className="absolute bottom-4 left-4 bg-amber-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2 shadow-lg animate-pulse">
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-          Air quality warning: Smog levels are currently at {pollution}%.
+        <div className="cc-sticky cc-o cc-rot-1 absolute bottom-4 left-4 px-3 py-1.5 text-[12px] flex items-center gap-2 animate-pulse-slow">
+          <CcIcon name="warn" className="w-4 h-4 text-[color:var(--cc-red)]" />
+          <span className="cc-marker font-bold text-[color:var(--cc-ink)]">Air quality warning — smog at {pollution}%</span>
         </div>
       )}
 
-      {/* Grid Outage Warning Banner */}
+      {/* Grid outage warning */}
       {reliability < 50 && (
-        <div className="absolute bottom-16 left-4 bg-red-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-red-500/30 text-red-300 text-xs flex items-center gap-2 shadow-lg animate-pulse">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          Grid overload: Blackouts are occurring across residential sectors.
+        <div className="cc-sticky cc-p cc-rot1 absolute bottom-[68px] left-4 px-3 py-1.5 text-[12px] flex items-center gap-2 animate-pulse-slow">
+          <CcIcon name="bolt" className="w-4 h-4 text-[color:var(--cc-red)]" />
+          <span className="cc-marker font-bold text-[color:var(--cc-ink)]">Grid overload — blackouts in residential sectors</span>
         </div>
       )}
 
-      {/* Game seed watermark */}
-      <div className="absolute bottom-4 right-4 text-[10px] font-mono text-slate-500 select-none">
-        RENDERER: WEBGL2 | GRID: 10x10
+      {/* Drafting watermark */}
+      <div className="absolute bottom-3 right-4 cc-mono text-[10px] text-[rgba(191,224,255,0.45)] select-none">
+        DWG. GP-07 · WEBGL2
       </div>
     </div>
   );

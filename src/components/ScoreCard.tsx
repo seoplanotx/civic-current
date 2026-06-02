@@ -1,18 +1,14 @@
 import React from 'react';
 import { useGameStore } from '../store/useGameStore';
 import { DailyLeaderboardPanel } from './DailyLeaderboardPanel';
-import {
-  Award,
-  Flame,
-  ShieldCheck,
-  Briefcase,
-  Leaf,
-  Heart,
-  DollarSign,
-  RotateCcw,
-  Sparkles
-} from 'lucide-react';
+import { CcIcon } from './PlanningWallDefs';
 
+/**
+ * ScoreCard — end-of-term overlay, styled as a final report pinned to the
+ * planning wall: a legacy-title sticky with hand-drawn metric bars, the
+ * narrative blurb, the daily leaderboard panel (for daily runs), and the
+ * replay button. Logic unchanged.
+ */
 export const ScoreCard: React.FC = () => {
   const { state, resetGame } = useGameStore();
   const dailyChallengeId = useGameStore((s) => s.dailyChallengeId);
@@ -21,18 +17,13 @@ export const ScoreCard: React.FC = () => {
   if (gameStatus !== 'victory' && gameStatus !== 'failed') return null;
 
   const finalScores = scores || {
-    energySecurity: 0,
-    economicStrength: 0,
-    environmentalHealth: 0,
-    publicApproval: 0,
-    fiscalResponsibility: 0,
-    overallLegacy: 0,
+    energySecurity: 0, economicStrength: 0, environmentalHealth: 0,
+    publicApproval: 0, fiscalResponsibility: 0, overallLegacy: 0,
     title: 'The Mayor Who Meant Well',
   };
 
   const isFailed = gameStatus === 'failed';
 
-  // Legacy descriptions based on title
   const getLegacyDescription = (title: string) => {
     switch (title) {
       case 'Grid Visionary':
@@ -60,152 +51,82 @@ export const ScoreCard: React.FC = () => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="relative w-full max-w-[580px] bg-slate-900/90 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col items-center shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
-        
-        {/* Dynamic Glowing Background Effect */}
-        <div className={`absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none ${isFailed ? 'bg-red-500' : 'bg-teal-500'}`} />
-        <div className={`absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none ${isFailed ? 'bg-amber-600' : 'bg-indigo-500'}`} />
+  const bars: { label: string; value: number; color: string }[] = [
+    { label: 'Energy security', value: finalScores.energySecurity, color: '#2f6db0' },
+    { label: 'Economy', value: finalScores.economicStrength, color: '#2e8b57' },
+    { label: 'Environment', value: finalScores.environmentalHealth, color: '#3a9d63' },
+    { label: 'Approval', value: finalScores.publicApproval, color: '#f07f95' },
+    { label: 'Fiscal', value: finalScores.fiscalResponsibility, color: '#f3a651' },
+  ];
 
-        {/* Section 1: Header */}
-        <div className="flex flex-col items-center text-center">
-          {isFailed ? (
-            <div className="p-4 bg-red-500/10 border border-red-500/25 rounded-2xl text-red-400 mb-4 shadow-inner">
-              <Flame className="w-10 h-10 animate-pulse" />
-            </div>
-          ) : (
-            <div className="p-4 bg-gradient-to-tr from-teal-500/10 to-indigo-500/10 border border-teal-500/25 rounded-2xl text-teal-400 mb-4 shadow-md">
-              <Award className="w-10 h-10 animate-bounce" />
-            </div>
+  return (
+    <div className="cc-backdrop animate-in fade-in duration-300">
+      <div className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col">
+
+        {/* Main report sticky */}
+        <div className={`cc-sticky ${isFailed ? 'cc-p' : 'cc-y'} cc-rot-1 relative p-7`}>
+          <span className="cc-pin" />
+
+          <div className="cc-label">
+            <CcIcon name={isFailed ? 'warn' : 'flag'} solid className={isFailed ? 'text-[color:var(--cc-red)]' : 'text-[color:var(--cc-blue)]'} />
+            {isFailed ? 'Term recalled · administrative suspension' : 'Final report · 50 turns governed'}
+          </div>
+
+          <div className="cc-hand text-[22px] text-[color:var(--cc-ink-soft)] mt-3">Your legacy as mayor…</div>
+          <div className="relative inline-block">
+            <h2 className="cc-hand font-bold text-[40px] leading-none text-[color:var(--cc-ink)]">
+              “{finalScores.title}”
+            </h2>
+            <svg className="cc-rough pointer-events-none absolute -bottom-2 left-0" style={{ width: '100%', height: '14px' }}>
+              <path d="M4,8 C100,2 250,2 98%,7" fill="none" stroke="#d8412f" strokeWidth="3" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {isFailed && (
+            <p className="cc-marker text-[13px] font-bold text-[color:var(--cc-red)] mt-3">
+              Critical failure: {failedReason}
+            </p>
           )}
 
-          <h2 className="text-2xl font-black bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
-            {isFailed ? 'Term Recalled!' : 'Term Completed!'}
-          </h2>
-          <p className="text-xs text-slate-400 uppercase tracking-widest font-mono mt-1">
-            {isFailed ? 'Administrative Suspension' : '50 simulated turns governed'}
+          {/* Metric bars */}
+          <div className="mt-6 flex flex-col gap-3">
+            {bars.map((b) => (
+              <div key={b.label}>
+                <div className="flex justify-between cc-mono text-[11px] uppercase tracking-wider text-[color:var(--cc-ink-soft)]">
+                  <span>{b.label}</span><span className="font-bold text-[color:var(--cc-ink)]">{b.value}</span>
+                </div>
+                <div className="cc-rough h-3.5 mt-1.5 rounded-lg relative overflow-visible" style={{ background: 'rgba(37,48,58,0.1)' }}>
+                  <span className="absolute left-0 top-0 bottom-0 rounded-lg" style={{ width: `${b.value}%`, background: b.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[12.5px] text-[color:var(--cc-ink)] opacity-85 leading-relaxed mt-5">
+            {getLegacyDescription(finalScores.title)}
           </p>
         </div>
 
-        {/* Section 2: Overall Title Badge */}
-        <div className={`mt-5 px-5 py-3 rounded-2xl border text-center shadow-md max-w-full ${
-          isFailed 
-            ? 'bg-red-950/40 border-red-500/20 text-red-300' 
-            : 'bg-indigo-950/40 border-indigo-500/30 text-indigo-300'
-        }`}>
-          <div className="text-[10px] font-mono uppercase tracking-widest leading-none font-bold text-slate-400">
-            Final Legacy Evaluation
-          </div>
-          <div className="text-lg font-black mt-2 leading-none flex items-center justify-center gap-2">
-            {!isFailed && <Sparkles className="w-4 h-4 text-indigo-400" />}
-            {finalScores.title}
+        {/* Overall legacy note */}
+        <div className="cc-sticky cc-b cc-rot1 relative p-5 mt-5 self-center w-[80%]">
+          <span className="cc-pin cc-pin-blue" />
+          <div className="cc-label">Overall legacy</div>
+          <div className="cc-marker font-bold text-[56px] leading-none mt-1 text-[color:var(--cc-ink)]">
+            {finalScores.overallLegacy}<span className="text-[24px] text-[color:var(--cc-ink-soft)]"> / 100</span>
           </div>
         </div>
 
-        {/* Fail detail */}
-        {isFailed && (
-          <p className="text-xs text-red-300/90 font-bold bg-red-950/30 px-4 py-2 border border-red-500/15 rounded-xl mt-3 max-w-[400px] text-center leading-relaxed">
-            CRITICAL FAILURE STATE: {failedReason}
-          </p>
-        )}
+        {/* Daily leaderboard + share — only for daily runs */}
+        {dailyChallengeId && <DailyLeaderboardPanel />}
 
-        {/* Section 3: Metric Scores */}
-        <div className="w-full mt-6 bg-slate-950/40 border border-white/5 p-5 rounded-2xl flex flex-col gap-3 shadow-inner">
-          <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-wider leading-none mb-1">
-            Department Performance Records
-          </h3>
-
-          {/* Grid Reliability */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 flex items-center gap-1.5 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                Energy Security
-              </span>
-              <span className="text-slate-100 font-bold font-mono">{finalScores.energySecurity}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-cyan-400" style={{ width: `${finalScores.energySecurity}%` }} />
-            </div>
-          </div>
-
-          {/* Economic Strength */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 flex items-center gap-1.5 font-medium">
-                <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
-                Economic Strength
-              </span>
-              <span className="text-slate-100 font-bold font-mono">{finalScores.economicStrength}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-indigo-400" style={{ width: `${finalScores.economicStrength}%` }} />
-            </div>
-          </div>
-
-          {/* Environmental Health */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 flex items-center gap-1.5 font-medium">
-                <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-                Environmental Health
-              </span>
-              <span className="text-slate-100 font-bold font-mono">{finalScores.environmentalHealth}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-emerald-400" style={{ width: `${finalScores.environmentalHealth}%` }} />
-            </div>
-          </div>
-
-          {/* Public Approval */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 flex items-center gap-1.5 font-medium">
-                <Heart className="w-3.5 h-3.5 text-rose-400" />
-                Public Approval
-              </span>
-              <span className="text-slate-100 font-bold font-mono">{finalScores.publicApproval}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-rose-400" style={{ width: `${finalScores.publicApproval}%` }} />
-            </div>
-          </div>
-
-          {/* Fiscal Responsibility */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-300 flex items-center gap-1.5 font-medium">
-                <DollarSign className="w-3.5 h-3.5 text-amber-500" />
-                Fiscal Responsibility
-              </span>
-              <span className="text-slate-100 font-bold font-mono">{finalScores.fiscalResponsibility}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-amber-400" style={{ width: `${finalScores.fiscalResponsibility}%` }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 4: Narrative Description */}
-        <p className="text-xs text-slate-300 text-center leading-relaxed mt-5 px-3 max-w-[460px]">
-          {getLegacyDescription(finalScores.title)}
-        </p>
-
-        {/* Section 4b: Daily Challenge leaderboard + share — only for daily runs */}
-        {dailyChallengeId && (
-          <div className="w-full">
-            <DailyLeaderboardPanel />
-          </div>
-        )}
-
-        {/* Section 5: Replay Trigger */}
-        <button
-          onClick={() => resetGame()}
-          className="w-full mt-7 bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-teal-400 hover:to-indigo-500 text-white font-extrabold text-sm py-3.5 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.98] select-none"
-        >
-          <RotateCcw className="w-4 h-4" />
-          {dailyChallengeId ? 'PLAY A FREE CITY' : 'GOVERN ANEW (PLAY AGAIN)'}
+        {/* Replay */}
+        <button onClick={() => resetGame()} className="cc-btn !text-[18px] !py-4 mt-6 mb-2 self-center">
+          <svg className="cc-btn-box cc-rough" viewBox="0 0 360 60" preserveAspectRatio="none">
+            <rect x="4" y="4" width="352" height="52" rx="11" fill="rgba(158,210,255,0.5)" stroke="#2f6db0" strokeWidth="3.5" />
+          </svg>
+          <span className="cc-btn-label flex items-center gap-2 text-[#13325a]">
+            <CcIcon name="reset" /> {dailyChallengeId ? 'Play a free city' : 'Govern anew'}
+          </span>
         </button>
       </div>
     </div>

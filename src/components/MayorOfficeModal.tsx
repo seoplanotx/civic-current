@@ -16,13 +16,13 @@
 
 import React, { useState } from 'react';
 import { useAuth, SignInButton } from '@clerk/clerk-react';
-import { Crown, X, Layers, Palette, BadgeCheck, HeartHandshake } from 'lucide-react';
 import {
   startSubscriptionCheckout,
   openBillingPortal,
 } from '../billing/subscriptionCheckout';
 import { useSubscription } from '../content/hooks';
 import { isClerkConfigured } from '../auth/ClerkProvider';
+import { CcIcon } from './PlanningWallDefs';
 
 interface Props {
   open: boolean;
@@ -31,22 +31,22 @@ interface Props {
 
 const PERKS = [
   {
-    icon: <Layers className="w-4 h-4 text-amber-400" />,
+    icon: <CcIcon name="layers" className="text-[var(--cc-blue)]" />,
     title: '5 city slots',
     text: 'Run up to five ongoing terms at once, synced across devices.',
   },
   {
-    icon: <Palette className="w-4 h-4 text-teal-400" />,
+    icon: <CcIcon name="palette" className="text-[var(--cc-green)]" />,
     title: 'Every terrain theme included',
     text: 'All cosmetic board themes unlocked while your subscription is active.',
   },
   {
-    icon: <BadgeCheck className="w-4 h-4 text-indigo-400" />,
+    icon: <CcIcon name="star" className="text-[var(--cc-red)]" />,
     title: 'Founder-tier badge',
     text: 'A distinct mark on your leaderboard profile.',
   },
   {
-    icon: <HeartHandshake className="w-4 h-4 text-emerald-400" />,
+    icon: <CcIcon name="heart" className="text-[var(--cc-red)]" />,
     title: 'Support ongoing development',
     text: 'Fund new buildings, events, and scenarios every month.',
   },
@@ -61,13 +61,13 @@ export const MayorOfficeModal: React.FC<Props> = ({ open, onClose }) => {
   if (!isClerkConfigured) {
     return (
       <Backdrop onClose={onClose}>
-        <div className="text-slate-200">
+        <div>
           <Header onClose={onClose} />
-          <p className="text-xs text-slate-300 leading-relaxed mt-4">
+          <p className="cc-marker text-[13px] text-[var(--cc-ink-soft)] leading-relaxed mt-4">
             Sign-in and subscriptions are not configured in this build. Set
-            <code className="mx-1 text-amber-300">VITE_CLERK_PUBLISHABLE_KEY</code>
+            <code className="cc-mono mx-1 text-[12px] text-[var(--cc-blue)]">VITE_CLERK_PUBLISHABLE_KEY</code>
             and the Stripe env vars (including
-            <code className="mx-1 text-amber-300">STRIPE_PRICE_MAYORS_OFFICE</code>)
+            <code className="cc-mono mx-1 text-[12px] text-[var(--cc-blue)]">STRIPE_PRICE_MAYORS_OFFICE</code>)
             to enable the Mayor's Office subscription.
           </p>
         </div>
@@ -131,74 +131,77 @@ const MayorOfficeModalInner: React.FC<InnerProps> = ({
   return (
     <Backdrop onClose={onClose}>
       <Header onClose={onClose} />
-      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+      <p className="cc-marker text-[13px] text-[var(--cc-ink-soft)] mt-3 leading-relaxed">
         A monthly subscription that keeps every premium perk active and funds new
         content. Cancel anytime from the billing portal.
       </p>
-      <div className="mt-5 flex flex-col gap-2">
+      <div className="mt-5 flex flex-col gap-2.5">
         {PERKS.map((p) => (
           <div
             key={p.title}
-            className="flex items-start gap-3 bg-slate-900/60 border border-white/5 rounded-xl p-3"
+            className="flex items-start gap-3 bg-white/45 rounded-lg p-3 ring-1 ring-[rgba(37,48,58,0.10)]"
           >
-            <div className="mt-0.5 shrink-0">{p.icon}</div>
+            <div className="mt-0.5 shrink-0 text-[18px]">{p.icon}</div>
             <div className="leading-tight">
-              <div className="text-xs font-extrabold text-slate-100">{p.title}</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">{p.text}</div>
+              <div className="cc-marker text-[14px] font-bold text-[var(--cc-ink)]">{p.title}</div>
+              <div className="cc-marker text-[12px] text-[var(--cc-ink-soft)] mt-0.5">{p.text}</div>
             </div>
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="mt-4 text-[11px] text-red-300 bg-red-950/40 border border-red-500/30 rounded-lg p-2">
+        <div className="cc-marker mt-4 text-[12px] text-[var(--cc-red)] bg-[rgba(216,65,47,0.10)] ring-1 ring-[rgba(216,65,47,0.30)] rounded-lg p-2">
           {error}
         </div>
       )}
 
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+      <div className="mt-6 pt-4 border-t border-[rgba(37,48,58,0.12)] flex items-center justify-between">
         <div className="flex flex-col leading-none">
           {isSubscriber ? (
             <>
-              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest">
-                Active
-              </span>
-              <span className="text-sm font-black text-slate-100 mt-1">
+              <span className="cc-stamp">Active</span>
+              <span className="cc-hand text-[22px] text-[var(--cc-ink)] mt-2">
                 Mayor's Office
               </span>
             </>
           ) : (
             <>
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
-                Subscription
-              </span>
-              <span className="text-2xl font-black text-slate-100 mt-1">
+              <span className="cc-label">Subscription</span>
+              <span className="cc-marker text-[30px] font-extrabold text-[var(--cc-ink)] mt-1 leading-none">
                 $4.99
-                <span className="text-sm font-bold text-slate-400">/mo</span>
+                <span className="cc-marker text-[15px] font-bold text-[var(--cc-ink-soft)]">/mo</span>
               </span>
             </>
           )}
         </div>
         {isSubscriber ? (
-          <button
-            onClick={handleManage}
-            disabled={busy}
-            className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl disabled:opacity-60 transition-all active:scale-[0.97]"
-          >
-            {busy ? 'Redirecting…' : 'Manage billing'}
+          <button onClick={handleManage} disabled={busy} className="cc-btn">
+            <svg className="cc-btn-box cc-rough" viewBox="0 0 200 56" preserveAspectRatio="none">
+              <rect x="4" y="4" width="192" height="48" rx="11" fill="rgba(37,48,58,0.06)" stroke="#25303a" strokeWidth="3.5" />
+            </svg>
+            <span className="cc-btn-label flex items-center gap-2 text-[var(--cc-ink)]">
+              {busy ? 'Redirecting…' : 'Manage billing'}
+            </span>
           </button>
         ) : isSignedIn ? (
-          <button
-            onClick={handleSubscribe}
-            disabled={busy}
-            className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl disabled:opacity-60 transition-all active:scale-[0.97]"
-          >
-            {busy ? 'Redirecting…' : 'Subscribe'}
+          <button onClick={handleSubscribe} disabled={busy} className="cc-btn">
+            <svg className="cc-btn-box cc-rough" viewBox="0 0 180 56" preserveAspectRatio="none">
+              <rect x="4" y="4" width="172" height="48" rx="11" fill="rgba(47,109,176,0.16)" stroke="#2f6db0" strokeWidth="3.5" />
+            </svg>
+            <span className="cc-btn-label flex items-center gap-2 text-[#13325a]">
+              <CcIcon name="crown" /> {busy ? 'Redirecting…' : 'Subscribe'}
+            </span>
           </button>
         ) : (
           <SignInButton mode="modal">
-            <button className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl">
-              Sign in to subscribe
+            <button className="cc-btn">
+              <svg className="cc-btn-box cc-rough" viewBox="0 0 240 56" preserveAspectRatio="none">
+                <rect x="4" y="4" width="232" height="48" rx="11" fill="rgba(47,109,176,0.16)" stroke="#2f6db0" strokeWidth="3.5" />
+              </svg>
+              <span className="cc-btn-label flex items-center gap-2 text-[#13325a]">
+                <CcIcon name="login" /> Sign in to subscribe
+              </span>
             </button>
           </SignInButton>
         )}
@@ -212,13 +215,14 @@ const Backdrop: React.FC<{ onClose: () => void; children: React.ReactNode }> = (
   children,
 }) => (
   <div
-    className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+    className="cc-backdrop animate-in fade-in duration-200"
     onClick={onClose}
   >
     <div
-      className="relative w-full max-w-[440px] bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl"
+      className="cc-sticky cc-b cc-rot-1 relative w-full max-w-[440px] p-7"
       onClick={(e) => e.stopPropagation()}
     >
+      <span className="cc-pin cc-pin-blue" />
       {children}
     </div>
   </div>
@@ -227,21 +231,20 @@ const Backdrop: React.FC<{ onClose: () => void; children: React.ReactNode }> = (
 const Header: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   <div className="flex items-start justify-between">
     <div>
-      <div className="flex items-center gap-2 text-amber-400">
-        <Crown className="w-4 h-4" />
-        <span className="text-[10px] font-mono font-bold uppercase tracking-widest">
-          Mayor's Office
-        </span>
+      <div className="cc-label">
+        <CcIcon name="crown" />
+        Mayor's Office
       </div>
-      <h3 className="text-slate-100 font-black text-lg mt-1">
+      <h3 className="cc-hand text-[var(--cc-ink)] text-[34px] leading-tight mt-1">
         Run the city in style
       </h3>
     </div>
     <button
       onClick={onClose}
-      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors"
+      className="cc-marker text-[20px] p-1.5 rounded-lg text-[var(--cc-ink-soft)] hover:text-[var(--cc-ink)] hover:bg-black/5 transition-colors"
+      aria-label="Close"
     >
-      <X className="w-4 h-4" />
+      <CcIcon name="x" />
     </button>
   </div>
 );

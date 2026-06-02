@@ -12,7 +12,7 @@ import { DailyChallengeButton } from './components/DailyChallengeButton';
 import { useGameStore } from './store/useGameStore';
 import { getCatalogEntry } from './content/catalog';
 import { getCosmeticCatalogEntry } from './content/cosmetics/catalog';
-import { HelpCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { PlanningWallDefs, CcIcon } from './components/PlanningWallDefs';
 
 /** True when the page was opened via a shared "?daily=…" deep link. */
 function hasDailyDeepLink(): boolean {
@@ -132,11 +132,10 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col p-4 md:p-6 font-sans antialiased overflow-hidden select-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
-      
-      {/* Dynamic Ambient Blur Glows in Background */}
-      <div className="absolute top-[-10%] left-[10%] w-[35vw] h-[35vw] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[10%] w-[35vw] h-[35vw] rounded-full bg-teal-500/10 blur-[120px] pointer-events-none" />
+    <div className="cc-wall min-h-screen w-full text-[color:var(--cc-ink)] flex flex-col p-4 md:p-6 antialiased overflow-hidden select-none">
+
+      {/* Shared SVG defs (roughen filters + hand-drawn icon sprite) */}
+      <PlanningWallDefs />
 
       {/* Daily Challenge entry point — floats top-left */}
       <div className="absolute top-4 left-6 z-30">
@@ -178,46 +177,40 @@ const App: React.FC = () => {
       {/* ScoreCard Game Over Overlay */}
       <ScoreCard />
 
-      {/* Post-purchase confirmation toast */}
+      {/* Post-purchase confirmation toast — a taped sticky note */}
       {purchaseToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-2 bg-emerald-950/90 border border-emerald-500/40 px-4 py-3 rounded-2xl text-emerald-200 text-xs font-bold shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          {purchaseToast}
+        <div className="cc-sticky cc-g cc-tape cc-rot-1 fixed top-20 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-2 px-5 py-3 max-w-[420px] shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+          <CcIcon name="check" className="text-[color:var(--cc-green)]" />
+          <span className="cc-marker font-bold text-sm text-[color:var(--cc-ink)]">{purchaseToast}</span>
         </div>
       )}
 
-      {/* Tutorial Dialog Overlay */}
+      {/* Tutorial Dialog Overlay — a yellow briefing note pinned to the wall */}
       {showTutorial && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-[460px] bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
-            
-            <div className="absolute -top-12 -left-12 w-24 h-24 rounded-full bg-indigo-500/15 blur-2xl pointer-events-none" />
-
+        <div className="cc-backdrop animate-in fade-in duration-200">
+          <div className="cc-sticky cc-y cc-rot-1 relative w-full max-w-[470px] p-7 shadow-2xl flex flex-col justify-between">
+            <span className="cc-pin" />
             <div className="flex flex-col">
-              <div className="flex items-center gap-2 text-indigo-400">
-                <Sparkles className="w-5 h-5 shrink-0" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest">
-                  Mayoral Briefing
-                </span>
+              <div className="cc-label">
+                <CcIcon name="flag" solid className="text-[color:var(--cc-blue)]" />
+                Mayoral Briefing
               </div>
-              <h3 className="text-slate-100 font-black text-lg mt-1">
+              <h3 className="cc-hand font-bold text-3xl mt-2 leading-none text-[color:var(--cc-ink)]">
                 {tutorialPrompts[tutorialStep].title}
               </h3>
-              <p className="text-slate-300 text-xs leading-relaxed mt-3 bg-slate-950/40 p-4 rounded-xl border border-white/5 shadow-inner">
+              <p className="text-[13px] leading-relaxed mt-3 text-[color:var(--cc-ink)] opacity-90">
                 {tutorialPrompts[tutorialStep].text}
               </p>
             </div>
 
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
-              {/* Skip button */}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-[rgba(37,48,58,0.12)]">
               <button
                 onClick={() => setShowTutorial(false)}
-                className="text-xs text-slate-500 hover:text-slate-300 font-bold transition-colors"
+                className="cc-mono text-[11px] uppercase tracking-wider text-[color:var(--cc-ink-soft)] hover:text-[color:var(--cc-ink)] font-bold transition-colors"
               >
-                Skip Briefing
+                Skip briefing
               </button>
 
-              {/* Next/Close button */}
               <button
                 onClick={() => {
                   if (tutorialStep < tutorialPrompts.length - 1) {
@@ -226,9 +219,14 @@ const App: React.FC = () => {
                     setShowTutorial(false);
                   }
                 }}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md transition-colors duration-150 active:scale-[0.96]"
+                className="cc-btn"
               >
-                {tutorialStep === tutorialPrompts.length - 1 ? "COMMENCE TERM" : "NEXT STEP"}
+                <svg className="cc-btn-box cc-rough" viewBox="0 0 220 48" preserveAspectRatio="none">
+                  <rect x="3" y="3" width="214" height="42" rx="9" fill="rgba(47,109,176,0.18)" stroke="#2f6db0" strokeWidth="3" />
+                </svg>
+                <span className="cc-btn-label">
+                  {tutorialStep === tutorialPrompts.length - 1 ? 'Commence term →' : 'Next step →'}
+                </span>
               </button>
             </div>
           </div>
@@ -242,10 +240,10 @@ const App: React.FC = () => {
             setTutorialStep(0);
             setShowTutorial(true);
           }}
-          className="fixed bottom-6 right-6 p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-xl hover:scale-105 transition-all z-40 active:scale-[0.95]"
+          className="cc-sticky cc-b fixed bottom-6 right-6 p-3 shadow-xl hover:scale-105 transition-all z-40 active:scale-[0.95] text-[color:var(--cc-blue)]"
           title="Open Mayoral Briefing"
         >
-          <HelpCircle className="w-5 h-5" />
+          <CcIcon name="help" className="w-5 h-5" />
         </button>
       )}
     </div>

@@ -16,11 +16,11 @@ import {
   SignInButton,
   UserButton,
 } from '@clerk/clerk-react';
-import { Sparkles, LogIn, Crown } from 'lucide-react';
 import { usePremium, useSubscription } from '../content/hooks';
 import { UpgradeModal } from '../billing/UpgradeModal';
 import { MayorOfficeModal } from './MayorOfficeModal';
 import { isClerkConfigured } from '../auth/ClerkProvider';
+import { CcIcon } from './PlanningWallDefs';
 
 export const AccountMenu: React.FC = () => {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -29,10 +29,10 @@ export const AccountMenu: React.FC = () => {
   const isSubscriber = useSubscription();
 
   if (!isClerkConfigured) {
-    // Render a discrete placeholder so the layout doesn't shift in dev
+    // Render a discrete taped tag so the layout doesn't shift in dev
     return (
-      <div className="text-[10px] font-mono text-slate-500 px-3 py-1.5 border border-white/5 rounded-full">
-        ANONYMOUS · LOCAL SAVE
+      <div className="cc-mono text-[10px] uppercase tracking-wider text-[color:var(--cc-ink-soft)] px-3 py-1.5 bg-[color:var(--cc-tape)] border border-black/5 -rotate-1">
+        Anonymous · local save
       </div>
     );
   }
@@ -41,9 +41,9 @@ export const AccountMenu: React.FC = () => {
     <div className="flex items-center gap-2">
       <SignedOut>
         <SignInButton mode="modal">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/60 border border-white/10 hover:bg-slate-900 text-slate-200 text-xs font-bold transition-colors">
-            <LogIn className="w-3.5 h-3.5" />
-            Sign in
+          <button className="cc-sticky cc-white cc-rot1 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[color:var(--cc-ink)] transition-all active:scale-[0.97]">
+            <CcIcon name="login" className="w-3.5 h-3.5 text-[color:var(--cc-blue)]" />
+            <span className="cc-marker">Sign in</span>
           </button>
         </SignInButton>
       </SignedOut>
@@ -55,30 +55,30 @@ export const AccountMenu: React.FC = () => {
           <button
             onClick={() => setMayorOpen(true)}
             title="Manage your Mayor's Office subscription"
-            className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-400/20 border border-amber-400/40 text-[10px] font-extrabold text-amber-300 uppercase tracking-wider hover:from-amber-500/30 hover:to-amber-400/30 transition-all active:scale-[0.97]"
+            className="cc-sticky cc-o cc-rot-1 px-2.5 py-1 text-[10px] font-extrabold text-[color:var(--cc-ink)] uppercase tracking-wider flex items-center gap-1 transition-all active:scale-[0.97]"
           >
-            Mayor's Office
+            <CcIcon name="crown" className="w-3 h-3 text-[color:var(--cc-blue)]" /> <span className="cc-marker">Mayor's Office</span>
           </button>
         ) : isPremium ? (
-          <span className="px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-500/20 to-violet-500/20 border border-indigo-400/40 text-[10px] font-extrabold text-indigo-300 uppercase tracking-wider flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> Premium
+          <span className="cc-sticky cc-b cc-rot1 px-2.5 py-1 text-[10px] font-extrabold text-[color:var(--cc-ink)] uppercase tracking-wider flex items-center gap-1">
+            <CcIcon name="star" className="w-3 h-3 text-[color:var(--cc-blue)]" /> <span className="cc-marker">Premium</span>
           </span>
         ) : (
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setUpgradeOpen(true)}
-              className="px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-md transition-all active:scale-[0.97]"
+              className="cc-sticky cc-y cc-rot-1 px-2.5 py-1 text-[10px] font-extrabold text-[color:var(--cc-ink)] uppercase tracking-wider flex items-center gap-1 transition-all active:scale-[0.97]"
             >
-              <Sparkles className="w-3 h-3" /> Upgrade
+              <CcIcon name="star" className="w-3 h-3 text-[color:var(--cc-blue)]" /> <span className="cc-marker">Upgrade</span>
             </button>
             {/* Subtle secondary entry point to the recurring subscription. */}
             <button
               onClick={() => setMayorOpen(true)}
               title="Mayor's Office subscription"
               aria-label="Mayor's Office subscription"
-              className="p-1 rounded-full text-amber-400/70 hover:text-amber-300 hover:bg-amber-400/10 transition-colors"
+              className="p-1 rounded-full text-[color:var(--cc-blue)] opacity-70 hover:opacity-100 hover:bg-[color:var(--cc-blue)]/10 transition-all"
             >
-              <Crown className="w-3.5 h-3.5" />
+              <CcIcon name="crown" className="w-3.5 h-3.5" />
             </button>
           </div>
         )}

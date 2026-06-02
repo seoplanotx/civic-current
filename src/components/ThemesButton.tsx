@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Palette } from 'lucide-react';
 import { CosmeticShop } from './CosmeticShop';
+import { CcIcon } from './PlanningWallDefs';
 
 /**
  * Entry point for the cosmetic theme store. Sits next to the content-pack Shop
@@ -20,10 +20,10 @@ export const ThemesButton: React.FC = () => {
       <button
         onClick={() => setOpen(true)}
         title="Board theme store"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/60 border border-white/10 hover:bg-slate-900 text-slate-200 text-xs font-bold transition-colors active:scale-[0.97]"
+        className="cc-sticky cc-white cc-rot-1 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[color:var(--cc-ink)] transition-all active:scale-[0.97]"
       >
-        <Palette className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Themes</span>
+        <CcIcon name="palette" className="w-3.5 h-3.5 text-[color:var(--cc-blue)]" />
+        <span className="cc-marker hidden sm:inline">Themes</span>
       </button>
       <CosmeticShop open={open} onClose={() => setOpen(false)} />
     </>

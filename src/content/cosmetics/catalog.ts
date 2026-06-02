@@ -36,9 +36,39 @@ export interface CosmeticCatalogEntry {
   accentColor: string;
   /** Per-terrain hex color overrides applied to the 3D board when equipped. */
   terrainColors: Partial<Record<TerrainType, string>>;
+  /**
+   * Free, always-owned theme (the default board look). When true the shop shows
+   * it as equippable to everyone with no price/purchase, and equipping it routes
+   * to the default (no terrain override) rather than a paid color map.
+   */
+  free?: boolean;
 }
 
 export const COSMETIC_CATALOG: CosmeticCatalogEntry[] = [
+  {
+    id: 'civic-default',
+    name: 'Civic Default',
+    tagline: 'The classic planning-board look',
+    description:
+      "The original Civic Current palette — bright, friendly terrain in natural greens, blues, and sandy golds. The default look every city starts with. Free, always yours.",
+    displayPrice: 'Free',
+    stripePriceEnv: '', // never charged — free/default theme
+    accentColor: '#8fbc8f', // matches the base 'plain' terrain
+    free: true,
+    // Mirrors the base TERRAINS palette so the swatch row previews the default
+    // board. Equipping routes to null (no override) so the live colors are used.
+    terrainColors: {
+      plain: '#8fbc8f',
+      forest: '#2e8b57',
+      river: '#4682b4',
+      beach: '#e8d8b0',
+      hills: '#8b8589',
+      coal: '#2f4f4f',
+      gas: '#708090',
+      farmland: '#d2b48c',
+      protected: '#556b2f',
+    },
+  },
   {
     id: 'noir',
     name: 'Noir City',

@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Civic Current — Planning Wall design system v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Shantell+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wall:#e9ecef; --grid:rgba(80,110,140,.10); --grid-bold:rgba(80,110,140,.16); --frame:#c2c7cd;
+    --ink:#25303a; --ink-soft:#5b6670; --red:#d8412f; --blue-mk:#2f6db0; --green-mk:#2e8b57;
+    --yellow:#ffe25a; --yellow-d:#f1ce3e; --pink:#ff9fb2; --pink-d:#f07f95;
+    --sky:#9ed2ff; --sky-d:#7cbcf2; --mint:#aee8b4; --mint-d:#8ed79a; --orange:#ffc178; --orange-d:#f3a651;
+    --tape:rgba(225,220,190,.7);
+    --bp:#123a63; --bp-2:#0f3057; --bp-line:rgba(180,212,245,.34); --bp-line2:rgba(180,212,245,.14);
+    --cyan:#bfe0ff; --cyan-bright:#7cc0ff; --amber:#ffb84d;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    background:var(--wall);
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+      linear-gradient(var(--grid-bold) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid-bold) 1px,transparent 1px),
+      radial-gradient(120% 90% at 50% -10%,#fbfcfd 0%,var(--wall) 55%,#e0e4e8 100%);
+    background-size:28px 28px,28px 28px,140px 140px,140px 140px,100% 100%;
+    background-attachment:fixed;
+    color:var(--ink); font-family:'Shantell Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  .hand{ font-family:'Caveat',cursive; } .marker{ font-family:'Shantell Sans',cursive; } .mono{ font-family:'JetBrains Mono',monospace; }
+  .rough{ filter:url(#rough); } .rough2{ filter:url(#rough2); }
+
+  /* section scaffolding for the system doc */
+  .screen{ max-width:1560px; margin:0 auto; padding:18px 38px 40px; position:relative; }
+  .screen + .screen{ border-top:2px dashed var(--frame); margin-top:10px; }
+  .seclabel{ font-family:'JetBrains Mono'; font-size:12px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--ink-soft); background:#fff; display:inline-block; padding:5px 12px; border:1.5px solid var(--frame);
+    border-radius:20px; margin:14px 0 22px; transform:rotate(-1deg); }
+
+  /* ---- sticky notes ---- */
+  .sticky{ position:relative; padding:16px 18px 18px; background:var(--yellow);
+    box-shadow:0 10px 18px rgba(40,50,60,.16),0 2px 5px rgba(40,50,60,.12); border-radius:2px 2px 5px 5px; }
+  .sticky::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:9px; background:var(--yellow-d); border-radius:0 0 5px 5px; opacity:.65; }
+  .sticky.tape::before{ content:""; position:absolute; top:-10px; left:50%; transform:translateX(-50%) rotate(-3deg);
+    width:80px; height:22px; background:var(--tape); box-shadow:inset 0 0 0 1px rgba(255,255,255,.4);
+    border-left:1px dashed rgba(0,0,0,.06); border-right:1px dashed rgba(0,0,0,.06); }
+  .pin{ position:absolute; top:-9px; left:50%; transform:translateX(-50%); width:18px; height:18px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ff8a8a,#d8412f 60%,#a52a1c); box-shadow:0 3px 4px rgba(0,0,0,.3); z-index:3; }
+  .pin.blue{ background:radial-gradient(circle at 35% 30%,#9ec9ff,#2f6db0 60%,#1d4a80); }
+  .pin.green{ background:radial-gradient(circle at 35% 30%,#b8efbf,#2e8b57 60%,#1f6b41); }
+  .y{background:var(--yellow);}.y::after{background:var(--yellow-d);}
+  .p{background:var(--pink);}.p::after{background:var(--pink-d);}
+  .b{background:var(--sky);}.b::after{background:var(--sky-d);}
+  .g{background:var(--mint);}.g::after{background:var(--mint-d);}
+  .o{background:var(--orange);}.o::after{background:var(--orange-d);}
+  .r-3{transform:rotate(-2.6deg);}.r-2{transform:rotate(-1.8deg);}.r-1{transform:rotate(-1deg);}
+  .r1{transform:rotate(1.1deg);}.r2{transform:rotate(1.9deg);}.r3{transform:rotate(2.6deg);}
+
+  /* hand icon */
+  .ico{ width:1em; height:1em; display:inline-block; vertical-align:-.12em; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round; }
+  .ico.solid{ fill:currentColor; stroke:none; }
+
+  /* ---- header ---- */
+  .topwrap{ display:flex; align-items:flex-start; justify-content:space-between; margin:6px 6px 26px; }
+  .masking-tape{ display:inline-block; background:var(--tape); padding:6px 22px 4px; transform:rotate(-1.5deg);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.45); border-left:1px dashed rgba(0,0,0,.07); border-right:1px dashed rgba(0,0,0,.07); }
+  .logo{ font-family:'Shantell Sans'; font-weight:700; font-size:52px; line-height:.95; letter-spacing:-1px; margin:0; }
+  .logo .spark{ color:var(--red); }
+  .tagline{ font-family:'Caveat'; font-weight:600; font-size:29px; color:var(--blue-mk); margin:8px 0 0 6px; }
+  .doodle{ position:absolute; pointer-events:none; overflow:visible; }
+
+  .turn{ width:250px; }
+  .ticks{ display:flex; gap:3px; flex-wrap:wrap; max-width:226px; margin-top:8px; }
+  .ticks i{ width:8px; height:14px; display:block; background:var(--ink); opacity:.8; transform:skewX(-12deg); border-radius:1px; }
+  .ticks i.todo{ background:transparent; box-shadow:inset 0 0 0 1.5px rgba(37,48,58,.30); }
+  .lbl{ font-family:'JetBrains Mono'; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+
+  /* ---- stat grid ---- */
+  .stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:26px 30px; margin:0 8px 38px; }
+  .stat .val{ font-family:'Shantell Sans'; font-weight:700; font-size:37px; line-height:1; margin:7px 0 4px; }
+  .stat .sub{ font-family:'Caveat'; font-size:20px; color:var(--ink-soft); }
+  .stat .sub.up{color:var(--green-mk);}.stat .sub.warn{color:var(--red);}
+  .stat .unit{ font-size:17px; font-weight:600; color:var(--ink-soft); }
+
+  /* ---- main ---- */
+  .main{ display:grid; grid-template-columns:1fr 380px; gap:34px; margin:0 8px; align-items:start; }
+  .blueprint{ position:relative; border-radius:5px; padding:22px 24px 16px; color:var(--cyan);
+    background:linear-gradient(var(--bp-line2) 1px,transparent 1px),linear-gradient(90deg,var(--bp-line2) 1px,transparent 1px),linear-gradient(135deg,var(--bp) 0%,var(--bp-2) 100%);
+    background-size:22px 22px,22px 22px,100% 100%;
+    box-shadow:0 18px 30px rgba(20,40,70,.28),0 4px 8px rgba(20,40,70,.2); border:1px solid rgba(150,190,230,.25); transform:rotate(-.5deg); }
+  .blueprint::after{ content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(circle at 14px 14px,rgba(255,255,255,.18) 2px,transparent 3px),radial-gradient(circle at calc(100% - 14px) 14px,rgba(255,255,255,.18) 2px,transparent 3px),radial-gradient(circle at 14px calc(100% - 14px),rgba(255,255,255,.18) 2px,transparent 3px),radial-gradient(circle at calc(100% - 14px) calc(100% - 14px),rgba(255,255,255,.18) 2px,transparent 3px); }
+  .bp-head{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid var(--bp-line); padding-bottom:10px; }
+  .bp-title{ font-family:'JetBrains Mono'; font-weight:700; letter-spacing:2px; font-size:14px; color:#eaf3ff; }
+  .bp-meta{ font-family:'JetBrains Mono'; font-size:11px; letter-spacing:1px; color:rgba(191,224,255,.6); }
+  .stage{ position:relative; height:440px; }
+  .stage svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .bp-label{ font-family:'JetBrains Mono'; font-size:10.5px; letter-spacing:.5px; fill:rgba(200,224,255,.8); }
+  .bp-tile{ fill:rgba(124,192,255,.07); stroke:var(--bp-line); stroke-width:1.3; }
+  .bp-tile.sel{ fill:rgba(255,184,77,.12); stroke:var(--amber); stroke-width:1.8; stroke-dasharray:5 4; }
+  .bp-tile.water{ fill:rgba(124,180,255,.16); stroke:rgba(150,200,255,.6); }
+  .bp-tile.hill{ fill:rgba(124,192,255,.12); }
+  .bp-node{ fill:rgba(255,184,77,.2); stroke:var(--amber); stroke-width:1.8; }
+  .bp-legend{ display:flex; gap:18px; margin-top:6px; font-family:'JetBrains Mono'; font-size:10px; letter-spacing:.5px; color:rgba(191,224,255,.7); }
+  .bp-legend b{ color:var(--amber); }
+
+  .col{ display:flex; flex-direction:column; gap:30px; }
+  .insp .terr{ font-family:'JetBrains Mono'; font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-soft); }
+  .insp .ttl{ font-family:'Caveat'; font-weight:700; font-size:30px; line-height:.95; margin-top:2px; }
+  .insp .desc{ font-size:13px; opacity:.85; margin:8px 0 0; line-height:1.4; }
+  .facility{ margin-top:14px; background:rgba(255,255,255,.55); border:1.5px dashed rgba(37,48,58,.25); border-radius:6px; padding:12px 14px; }
+  .facility h4{ font-family:'Shantell Sans'; font-weight:700; font-size:17px; margin:0 0 8px; display:flex; align-items:center; gap:8px; }
+  .spec{ display:flex; justify-content:space-between; font-family:'JetBrains Mono'; font-size:12px; padding:3px 0; }
+  .spec .k{ color:var(--ink-soft); } .spec .v{ font-weight:700; } .spec .v.pos{color:var(--green-mk);} .spec .v.neg{color:var(--red);}
+  .chips{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .chip{ font-family:'Caveat'; font-weight:600; font-size:16px; line-height:1; padding:4px 9px; border-radius:20px; background:rgba(46,139,87,.14); color:var(--green-mk); }
+  .chip.b{ background:rgba(47,109,176,.14); color:var(--blue-mk); }
+  .btn{ position:relative; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:'Shantell Sans'; font-weight:700; font-size:16px; color:var(--ink); background:transparent; border:none; padding:12px 22px; cursor:pointer; width:100%; margin-top:12px; }
+  .btn svg{ position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px); }
+  .stamp{ font-family:'Caveat'; font-weight:700; font-size:20px; color:var(--green-mk); border:2px solid var(--green-mk); border-radius:6px; padding:1px 10px; transform:rotate(-6deg); display:inline-block; }
+
+  .endturn{ margin:40px 8px 0; display:flex; align-items:center; gap:26px; }
+  .end-btn{ position:relative; font-family:'Shantell Sans'; font-weight:700; font-size:30px; color:#13325a; background:transparent; border:none; padding:20px 56px; cursor:pointer; }
+  .end-btn svg{ position:absolute; inset:0; width:100%; height:100%; }
+  .forecast{ font-family:'Caveat'; font-size:22px; color:var(--ink-soft); }
+  .coffee{ position:absolute; width:92px; height:92px; border-radius:50%; border:7px solid rgba(120,72,36,.15); pointer-events:none; }
+  .coffee::after{ content:""; position:absolute; inset:-3px; border-radius:50%; border:2px solid rgba(120,72,36,.10); }
+  .cornertag{ position:fixed; right:12px; bottom:12px; font-family:'JetBrains Mono'; font-size:11px; letter-spacing:1px; background:var(--ink); color:#fff; padding:6px 12px; border-radius:4px; opacity:.85; z-index:50; }
+
+  /* ---- scorecard ---- */
+  .score-wrap{ display:grid; grid-template-columns:1.1fr 1fr; gap:40px; align-items:start; }
+  .bar-row{ margin:14px 0; }
+  .bar-row .top{ display:flex; justify-content:space-between; font-family:'JetBrains Mono'; font-size:12px; text-transform:uppercase; letter-spacing:1px; }
+  .bar{ height:14px; background:rgba(37,48,58,.10); border-radius:8px; margin-top:6px; position:relative; overflow:visible; }
+  .bar > span{ position:absolute; left:0; top:0; bottom:0; border-radius:8px; }
+  .legacy-badge{ display:inline-block; font-family:'Caveat'; font-weight:700; font-size:40px; color:var(--ink); }
+
+  /* ---- shop ---- */
+  .shoprow{ display:grid; grid-template-columns:repeat(3,1fr); gap:30px; }
+  .swatches{ display:flex; gap:5px; margin:10px 0; }
+  .swatches i{ width:26px; height:26px; border-radius:4px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.1); transform:rotate(-3deg); }
+
+  /* ---- share card ---- */
+  .share{ width:540px; background:#fffdf5; border-radius:8px; padding:0; box-shadow:0 16px 30px rgba(40,50,60,.2); border:1px solid #e7e0c8; overflow:hidden; transform:rotate(-1deg); position:relative; }
+  .share .top{ background:var(--bp); color:var(--cyan); padding:18px 22px; position:relative;
+    background-image:linear-gradient(var(--bp-line2) 1px,transparent 1px),linear-gradient(90deg,var(--bp-line2) 1px,transparent 1px); background-size:18px 18px,18px 18px; }
+  .share .body{ padding:20px 24px 24px; }
+
+  /* ---- mobile ---- */
+  .phone{ width:390px; margin:0 auto; border:12px solid #1c2530; border-radius:42px; background:var(--wall);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px); background-size:24px 24px,24px 24px;
+    box-shadow:0 20px 40px rgba(20,30,45,.3); overflow:hidden; height:760px; position:relative; }
+  .phone .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:140px; height:24px; background:#1c2530; border-radius:0 0 16px 16px; z-index:10; }
+  .phone .pad{ padding:34px 16px 16px; height:100%; overflow:hidden; }
+  .mstat{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"/></filter>
+    <filter id="rough2"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2"/></filter>
+
+    <!-- hand-drawn icon sprites (replace emoji) -->
+    <g id="i-coin"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9 M9.6 9.6c0-1.2 1.1-1.8 2.4-1.8s2.4.7 2.4 1.7c0 2.4-4.8 1.2-4.8 3.6 0 1 1.1 1.8 2.4 1.8s2.4-.7 2.4-1.8"/></g>
+    <g id="i-bolt"><path d="M13.5 3.5 6 13h5l-1 7.5 7.5-9.5h-5z"/></g>
+    <g id="i-shield"><path d="M12 3.5 5.5 6v5.5c0 4 2.8 7 6.5 8.5 3.7-1.5 6.5-4.5 6.5-8.5V6z"/><path d="M9.2 12l2 2 3.6-4"/></g>
+    <g id="i-heart"><path d="M12 19.5C6.5 15.5 4 12.6 4 9.5 4 7 6 5.3 8.2 5.3c1.6 0 2.9.9 3.8 2.2.9-1.3 2.2-2.2 3.8-2.2C18 5.3 20 7 20 9.5c0 3.1-2.5 6-8 10z"/></g>
+    <g id="i-people"><circle cx="9" cy="8.5" r="2.8"/><circle cx="16" cy="9.5" r="2.2"/><path d="M4.5 18.5c0-3 2-4.8 4.5-4.8s4.5 1.8 4.5 4.8 M14 14c2.2 0 4 1.6 4.5 4.3"/></g>
+    <g id="i-brief"><rect x="4" y="8" width="16" height="11" rx="2"/><path d="M9 8V6.5C9 5.7 9.6 5 10.5 5h3c.9 0 1.5.7 1.5 1.5V8 M4 13h16"/></g>
+    <g id="i-leaf"><path d="M5 19c0-8 6-13 14-13 0 8-5 14-13 13.5 M7 17c2-4 5-6.5 9-8"/></g>
+    <g id="i-star"><path d="M12 4l2.4 5 5.4.7-4 3.7 1 5.4-4.8-2.7-4.8 2.7 1-5.4-4-3.7 5.4-.7z"/></g>
+    <g id="i-sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 3.5v2.3 M12 18.2v2.3 M3.5 12h2.3 M18.2 12h2.3 M6 6l1.6 1.6 M16.4 16.4 18 18 M18 6l-1.6 1.6 M7.6 16.4 6 18"/></g>
+    <g id="i-anchor"><circle cx="12" cy="6" r="2"/><path d="M12 8v11 M7 12H5c0 4 3 6.5 7 6.5s7-2.5 7-6.5h-2 M8.5 11.5 12 14l3.5-2.5"/></g>
+    <g id="i-wave"><path d="M3.5 9c1.5 0 1.5 1.5 3 1.5S8 9 9.5 9 11 10.5 12.5 10.5 14 9 15.5 9 17 10.5 18.5 10.5 20 9 20.5 9 M3.5 14c1.5 0 1.5 1.5 3 1.5S8 14 9.5 14 11 15.5 12.5 15.5 14 14 15.5 14 17 15.5 18.5 15.5 20 14 20.5 14"/></g>
+    <g id="i-flag"><path d="M6 20V4 M6 5h11l-2.5 3.5L17 12H6"/></g>
+    <g id="i-clock"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g>
+    <g id="i-share"><circle cx="6.5" cy="12" r="2.3"/><circle cx="17" cy="6.5" r="2.3"/><circle cx="17" cy="17.5" r="2.3"/><path d="M8.6 11l6.3-3.4 M8.6 13l6.3 3.4"/></g>
+  </defs>
+</svg>
+
+<!-- ============================================================= -->
+<!-- SCREEN 1 — MAIN PLAY                                            -->
+<!-- ============================================================= -->
+<div class="screen">
+  <div class="seclabel">Screen 1 · Main play (desktop)</div>
+  <div class="coffee" style="top:300px; right:430px; transform:rotate(8deg)"></div>
+
+  <div class="topwrap">
+    <div style="position:relative">
+      <span class="masking-tape"><h1 class="logo">Civic <span class="spark">Current</span></h1></span>
+      <div class="tagline">keep the lights on →</div>
+      <svg class="doodle rough" style="left:6px; top:60px; width:360px; height:24px"><path d="M6,14 C90,4 230,4 350,12" fill="none" stroke="#d8412f" stroke-width="3.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="sticky b r2 turn">
+      <span class="pin blue"></span>
+      <div class="lbl"><svg class="ico solid" viewBox="0 0 24 24"><use href="#i-flag"/></svg> Term · mayoral calendar</div>
+      <div style="font-family:'Shantell Sans'; font-weight:700; font-size:25px; margin-top:5px">Turn 16 <span class="hand" style="color:#1d4a80">of 50</span></div>
+      <div class="ticks">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i><i class="todo"></i>
+      </div>
+      <div class="hand" style="font-size:18px; color:#1d4a80; margin-top:6px">34 turns left!</div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="sticky y r-2 stat tape"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-coin"/></svg> Treasury</div><div class="val">$1,240</div><div class="sub up">▲ +$85 / turn</div></div>
+    <div class="sticky o r1 stat" style="position:relative"><span class="pin"></span><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-bolt"/></svg> Power load</div><div class="val">220<span class="unit"> / 260 MW</span></div><div class="sub warn">85% — near capacity!</div>
+      <svg class="doodle rough" style="inset:-14px; width:calc(100% + 28px); height:calc(100% + 28px)"><ellipse cx="50%" cy="54%" rx="46%" ry="44%" fill="none" stroke="#d8412f" stroke-width="3" stroke-linecap="round"/></svg></div>
+    <div class="sticky b r-1 stat tape"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-shield"/></svg> Grid reliability</div><div class="val">88<span class="unit">%</span></div><div class="sub">stable · within tolerance</div></div>
+    <div class="sticky p r3 stat"><span class="pin"></span><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-heart"/></svg> Approval</div><div class="val">62<span class="unit">%</span></div><div class="sub up">▲ +4 this term</div></div>
+    <div class="sticky g r2 stat tape"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-people"/></svg> Population</div><div class="val">184<span class="unit"> / 220</span></div><div class="sub">+6 settlers moved in</div></div>
+    <div class="sticky y r-1 stat"><span class="pin green"></span><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-brief"/></svg> Jobs</div><div class="val">170<span class="unit"> / 184</span></div><div class="sub">14 still job-hunting</div></div>
+    <div class="sticky g r-3 stat tape"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-leaf"/></svg> Environment</div><div class="val">71<span class="unit">%</span></div><div class="sub up">healthy · trending up</div></div>
+    <div class="sticky p r1 stat"><span class="pin blue"></span><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-star"/></svg> Political capital</div><div class="val">12<span class="unit"> / 20</span></div><div class="sub">8 to spend</div></div>
+  </div>
+
+  <div class="main">
+    <div class="blueprint">
+      <div class="bp-head"><div class="bp-title">◇ GRID SITE PLAN — SECTOR 7</div><div class="bp-meta">SCALE 1:2000 · ISO 30° · SHEET GP-07</div></div>
+      <div class="stage">
+        <svg viewBox="0 0 760 440" preserveAspectRatio="xMidYMid meet">
+          <g class="rough" transform="translate(380,120)">
+            <!-- 4x4 iso field, stronger strokes -->
+            <polygon class="bp-tile hill" points="0,0 39,20 0,40 -39,20"/>
+            <polygon class="bp-tile" points="78,40 117,60 78,80 39,60"/>
+            <polygon class="bp-tile" points="156,80 195,100 156,120 117,100"/>
+            <polygon class="bp-tile" points="234,120 273,140 234,160 195,140"/>
+            <polygon class="bp-tile hill" points="-78,40 -39,60 -78,80 -117,60"/>
+            <polygon class="bp-tile" points="0,80 39,100 0,120 -39,100"/>
+            <polygon class="bp-tile sel" points="78,120 117,140 78,160 39,140"/>
+            <polygon class="bp-tile" points="156,160 195,180 156,200 117,180"/>
+            <polygon class="bp-tile water" points="-156,80 -117,100 -156,120 -195,100"/>
+            <polygon class="bp-tile water" points="-78,120 -39,140 -78,160 -117,140"/>
+            <polygon class="bp-tile water" points="0,160 39,180 0,200 -39,180"/>
+            <polygon class="bp-tile" points="78,200 117,220 78,240 39,220"/>
+            <polygon class="bp-tile water" points="-234,120 -195,140 -234,160 -273,140"/>
+            <polygon class="bp-tile" points="-156,160 -117,180 -156,200 -195,180"/>
+            <polygon class="bp-tile" points="-78,200 -39,220 -78,240 -117,220"/>
+            <polygon class="bp-tile" points="0,240 39,260 0,280 -39,260"/>
+            <!-- hill hatching -->
+            <g style="stroke:var(--cyan-bright); stroke-width:1.1; fill:none; opacity:.7">
+              <line x1="-12" y1="14" x2="6" y2="22"/><line x1="-20" y1="18" x2="-2" y2="26"/>
+              <line x1="-90" y1="54" x2="-72" y2="62"/><line x1="-98" y1="58" x2="-80" y2="66"/>
+            </g>
+            <!-- river flow lines -->
+            <path d="M-234,140 L-156,100 M-195,140 L-117,100 M-156,120 L-78,160 L0,200" style="stroke:var(--cyan-bright); stroke-width:1.3; fill:none; opacity:.55"/>
+            <!-- power node raised -->
+            <g transform="translate(234,120)">
+              <polygon class="bp-node" points="0,-26 26,-13 26,0 0,13 -26,0 -26,-13"/>
+              <polygon points="0,-52 26,-39 26,-13 0,0 -26,-13 -26,-39" style="fill:rgba(255,184,77,.12); stroke:var(--amber); stroke-width:1.8"/>
+              <path d="M3,-44 L-8,-30 L3,-30 L-5,-15" fill="none" stroke="#ffd98a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+            <!-- tidal turbine marker -->
+            <g transform="translate(-78,140)" style="stroke:var(--cyan-bright); stroke-width:1.6; fill:none">
+              <line x1="0" y1="2" x2="0" y2="-22"/><circle cx="0" cy="-24" r="3"/>
+              <line x1="0" y1="-24" x2="10" y2="-30"/><line x1="0" y1="-24" x2="-9" y2="-31"/><line x1="0" y1="-24" x2="0" y2="-35"/>
+            </g>
+          </g>
+          <text class="bp-label" x="70" y="150" style="fill:var(--cyan-bright)">RIVER · COOLANT</text>
+          <text class="bp-label" x="300" y="92">HILLS · +40m</text>
+          <text class="bp-label" x="600" y="120" style="fill:var(--amber)">⚡ GRID NODE 01 · 130 MW</text>
+        </svg>
+        <svg style="position:absolute; inset:0; width:100%; height:100%;" class="rough2">
+          <ellipse cx="458" cy="262" rx="58" ry="32" fill="none" stroke="#ffd24a" stroke-width="3" stroke-linecap="round"/>
+          <path d="M600,236 C556,232 520,246 502,256" fill="none" stroke="#ffd24a" stroke-width="3" stroke-linecap="round"/>
+          <path d="M502,256 l15,-8 m-15,8 l10,13" fill="none" stroke="#ffd24a" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <div class="hand" style="position:absolute; right:42px; top:188px; color:#ffd24a; font-size:25px; font-weight:700; transform:rotate(-5deg)">build solar here!</div>
+        <div class="hand" style="position:absolute; left:120px; bottom:60px; color:var(--cyan-bright); font-size:20px; transform:rotate(2deg)">tidal = steady ⚓</div>
+      </div>
+      <div class="bp-legend"><span>tile <b>D7</b> selected</span><span>6 tiles · 1,200 m</span><span style="margin-left:auto">DWG. GP-07 · 30° ISO</span></div>
+    </div>
+
+    <div class="col">
+      <div class="sticky y r1 insp" style="padding:18px 20px 22px"><span class="pin"></span>
+        <div class="terr">Tile D7 · plains</div><div class="ttl">Open Plains</div>
+        <div class="desc">Flat, breezy, ready to build. Sunny exposure — solar loves it here.</div>
+        <div class="facility"><h4><svg class="ico" style="color:var(--orange-d)" viewBox="0 0 24 24"><use href="#i-sun"/></svg> Solar Farm</h4>
+          <div class="spec"><span class="k">Build cost</span><span class="v">$320</span></div>
+          <div class="spec"><span class="k">Upkeep</span><span class="v neg">−$8 / turn</span></div>
+          <div class="spec"><span class="k">Power</span><span class="v pos">+35 MW</span></div>
+          <div class="spec"><span class="k">Jobs</span><span class="v pos">+2</span></div>
+          <div class="chips"><span class="chip">quiet</span><span class="chip">0 emissions</span><span class="chip b">renewable</span></div>
+          <button class="btn"><svg viewBox="0 0 240 52" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="234" height="46" rx="8" fill="rgba(46,139,87,.18)" stroke="#2e8b57" stroke-width="3"/></svg>✎ BUILD IT — $320</button>
+        </div>
+      </div>
+      <div class="sticky g r-2 insp"><span class="pin green"></span>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+          <div><div class="terr">Tile B4 · coastal</div><div class="ttl">Coastal Beach</div></div>
+          <span class="stamp">operational ✓</span>
+        </div>
+        <div class="facility" style="border-style:solid; border-color:rgba(46,139,87,.4)"><h4><svg class="ico" style="color:var(--blue-mk)" viewBox="0 0 24 24"><use href="#i-anchor"/></svg> Tidal Stream Turbine</h4>
+          <div class="spec"><span class="k">Power</span><span class="v pos">+45 MW</span></div>
+          <div class="spec"><span class="k">Net cost</span><span class="v neg">−$12 / turn</span></div>
+          <div class="spec"><span class="k">Jobs</span><span class="v pos">+6</span></div>
+          <div class="spec"><span class="k">Uptime</span><span class="v">99.4%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="endturn">
+    <div class="sticky p r-2 tape" style="flex:1; padding:18px 22px">
+      <div style="display:flex; align-items:center; gap:10px"><span class="hand" style="font-size:30px; font-weight:700; color:var(--red)">⚠ Heat Wave!</span><span class="terr" style="margin-left:auto">decision needed</span></div>
+      <div class="desc" style="margin-top:6px; font-size:14px">Everyone's cranking the A/C — peak load could blow past capacity within 2 turns. What's the call, Mayor?</div>
+      <div style="display:flex; gap:10px; margin-top:12px">
+        <button class="btn" style="width:auto"><svg viewBox="0 0 200 44" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="194" height="38" rx="7" fill="rgba(37,48,58,.06)" stroke="#25303a" stroke-width="2.5"/></svg>Mandate brownouts</button>
+        <button class="btn" style="width:auto"><svg viewBox="0 0 220 44" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="214" height="38" rx="7" fill="rgba(216,65,47,.10)" stroke="#d8412f" stroke-width="2.5"/></svg>Fire up peaker — $140</button>
+      </div>
+    </div>
+    <div style="position:relative; text-align:center">
+      <button class="end-btn"><svg viewBox="0 0 320 92" preserveAspectRatio="none" class="rough"><rect x="5" y="5" width="310" height="82" rx="12" fill="rgba(158,210,255,.5)" stroke="#2f6db0" stroke-width="4"/></svg>END TURN ▶</button>
+      <div class="forecast">…then: +$85, +12 MW, approval steady</div>
+      <svg class="doodle rough" style="left:-66px; top:22px; width:66px; height:58px"><path d="M6,8 C30,8 50,28 60,46" fill="none" stroke="#d8412f" stroke-width="3" stroke-linecap="round"/><path d="M60,46 l-3,-16 m3,16 l-16,-1" fill="none" stroke="#d8412f" stroke-width="3" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- SCREEN 2 — GAME OVER SCORECARD                                  -->
+<!-- ============================================================= -->
+<div class="screen">
+  <div class="seclabel">Screen 2 · End of term — scorecard</div>
+  <div class="score-wrap">
+    <div class="sticky y r-1" style="padding:26px 30px">
+      <span class="pin"></span>
+      <div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-flag"/></svg> Final report · 50 turns governed</div>
+      <div class="hand" style="font-size:26px; color:var(--ink-soft); margin-top:8px">Your legacy as mayor…</div>
+      <div class="legacy-badge">“The Grid Whisperer”</div>
+      <svg class="doodle rough" style="left:18px; top:118px; width:340px; height:26px"><path d="M6,16 C100,6 250,6 332,14" fill="none" stroke="#d8412f" stroke-width="3" stroke-linecap="round"/></svg>
+      <div style="margin-top:24px">
+        <div class="bar-row"><div class="top"><span>Energy security</span><span>92</span></div><div class="bar rough"><span style="width:92%; background:var(--blue-mk)"></span></div></div>
+        <div class="bar-row"><div class="top"><span>Economy</span><span>78</span></div><div class="bar rough"><span style="width:78%; background:var(--green-mk)"></span></div></div>
+        <div class="bar-row"><div class="top"><span>Environment</span><span>71</span></div><div class="bar rough"><span style="width:71%; background:#3a9d63"></span></div></div>
+        <div class="bar-row"><div class="top"><span>Approval</span><span>62</span></div><div class="bar rough"><span style="width:62%; background:var(--pink-d)"></span></div></div>
+        <div class="bar-row"><div class="top"><span>Fiscal</span><span>61</span></div><div class="bar rough"><span style="width:61%; background:var(--orange-d)"></span></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="sticky b r2" style="padding:22px 24px"><span class="pin blue"></span>
+        <div class="lbl">Overall legacy</div>
+        <div style="font-family:'Shantell Sans'; font-weight:700; font-size:64px; line-height:1; margin-top:4px">73<span style="font-size:28px; color:var(--ink-soft)"> / 100</span></div>
+        <div class="hand" style="font-size:22px; color:var(--blue-mk); margin-top:4px">A solid term. The lights stayed on. ✓</div>
+      </div>
+      <div class="sticky g r-2 tape" style="padding:20px 24px">
+        <div class="hand" style="font-size:22px; color:var(--green-mk)">Daily Challenge #152 — you placed <b>#7</b> of 1,284 mayors today</div>
+        <div style="display:flex; gap:12px; margin-top:14px">
+          <button class="btn" style="width:auto; padding-left:30px"><svg viewBox="0 0 210 48" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="204" height="42" rx="8" fill="rgba(47,109,176,.14)" stroke="#2f6db0" stroke-width="3"/></svg><svg class="ico" viewBox="0 0 24 24"><use href="#i-share"/></svg> Share result</button>
+          <button class="btn" style="width:auto"><svg viewBox="0 0 170 48" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="164" height="42" rx="8" fill="rgba(37,48,58,.06)" stroke="#25303a" stroke-width="2.5"/></svg>Play again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- SCREEN 3 — THEMES SHOP + SHARE CARD                             -->
+<!-- ============================================================= -->
+<div class="screen">
+  <div class="seclabel">Screen 3 · Themes shop & share card</div>
+  <div style="display:grid; grid-template-columns:1fr 560px; gap:46px; align-items:start">
+    <div>
+      <div class="hand" style="font-size:30px; color:var(--ink); margin:0 0 4px">Re-skin your city ✎</div>
+      <div class="desc" style="margin:0 0 20px">Cosmetic only · applied live · one-time, yours forever</div>
+      <div class="shoprow">
+        <div class="sticky y r-2" style="padding:18px"><span class="pin"></span>
+          <div class="terr">one-time · $2.99</div><div class="ttl" style="font-size:26px">Noir City</div>
+          <div class="swatches"><i style="background:#3a3f44"></i><i style="background:#54595f"></i><i style="background:#6b7280"></i><i style="background:#878d94"></i><i style="background:#a3a8af"></i></div>
+          <div class="desc" style="font-size:12px">Moody monochrome — a rain-slicked, film-noir take.</div>
+          <button class="btn"><svg viewBox="0 0 220 46" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="214" height="40" rx="8" fill="rgba(37,48,58,.08)" stroke="#25303a" stroke-width="2.5"/></svg>Buy $2.99</button>
+        </div>
+        <div class="sticky p r1" style="padding:18px"><span class="pin"></span>
+          <div class="terr" style="color:var(--green-mk)">owned</div><div class="ttl" style="font-size:26px">Vaporwave</div>
+          <div class="swatches"><i style="background:#ff71ce"></i><i style="background:#b967ff"></i><i style="background:#01cdfe"></i><i style="background:#05ffa1"></i><i style="background:#fffb96"></i></div>
+          <div class="desc" style="font-size:12px">Neon pink & cyan — retro-futurist late-night glow.</div>
+          <button class="btn"><svg viewBox="0 0 220 46" preserveAspectRatio="none" class="rough"><rect x="3" y="3" width="214" height="40" rx="8" fill="rgba(47,109,176,.16)" stroke="#2f6db0" stroke-width="3"/></svg>Equip</button>
+        </div>
+        <div class="sticky g r-1" style="padding:18px"><span class="pin green"></span>
+          <div class="terr" style="color:var(--green-mk)">equipped ✓</div><div class="ttl" style="font-size:26px">Solarpunk</div>
+          <div class="swatches"><i style="background:#2e8b57"></i><i style="background:#5cb87a"></i><i style="background:#a8d672"></i><i style="background:#e9c46a"></i><i style="background:#7cc0ff"></i></div>
+          <div class="desc" style="font-size:12px">Lush greens & gold — optimistic, leafy, alive.</div>
+          <div style="text-align:center; margin-top:14px"><span class="stamp">in use</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARE CARD -->
+    <div>
+      <div class="hand" style="font-size:24px; color:var(--ink-soft); margin-bottom:10px">…and the share card it generates:</div>
+      <div class="share">
+        <div class="top">
+          <div class="bp-meta" style="color:rgba(191,224,255,.7)">CIVIC CURRENT · DAILY CHALLENGE</div>
+          <div style="font-family:'Shantell Sans'; font-weight:700; font-size:30px; color:#eaf3ff; margin-top:4px">#152 — “The Grid Whisperer”</div>
+        </div>
+        <div class="body">
+          <div style="display:flex; gap:8px; font-family:'JetBrains Mono'; font-weight:700; font-size:20px">
+            <span style="color:var(--blue-mk)">⚡92</span><span style="color:var(--orange-d)">💰61</span><span style="color:var(--green-mk)">🌍71</span><span style="color:var(--pink-d)">❤️62</span>
+          </div>
+          <div style="font-family:'Shantell Sans'; font-weight:700; font-size:34px; margin:10px 0 2px">Legacy 73 / 100</div>
+          <div class="hand" style="font-size:22px; color:var(--ink-soft)">Top 1% of mayors today 🏆</div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:14px; font-family:'JetBrains Mono'; font-size:12px; color:var(--blue-mk)">
+            <svg class="ico" viewBox="0 0 24 24"><use href="#i-share"/></svg> civiccurrent.app/?daily=1 · can you beat me?
+          </div>
+        </div>
+        <svg class="doodle rough" style="right:18px; top:96px; width:70px; height:70px"><path d="M10,40 C20,20 44,14 60,20" fill="none" stroke="#ffd24a" stroke-width="3" stroke-linecap="round"/><path d="M60,20 l-14,-3 m14,3 l-4,14" fill="none" stroke="#ffd24a" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- SCREEN 4 — MOBILE                                               -->
+<!-- ============================================================= -->
+<div class="screen">
+  <div class="seclabel">Screen 4 · Mobile (responsive)</div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="pad">
+      <div style="position:relative; margin-bottom:14px">
+        <span class="masking-tape" style="padding:4px 14px 2px"><span class="logo" style="font-size:30px">Civic <span class="spark">Current</span></span></span>
+      </div>
+      <div class="sticky b r1" style="padding:12px 14px; margin-bottom:14px">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <span style="font-family:'Shantell Sans'; font-weight:700; font-size:18px">Turn 16 <span class="hand" style="color:#1d4a80">/ 50</span></span>
+          <span class="hand" style="font-size:18px; color:#1d4a80">34 left</span>
+        </div>
+      </div>
+      <div class="mstat">
+        <div class="sticky y r-1" style="padding:12px 14px"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-coin"/></svg> Treasury</div><div class="val" style="font-size:26px">$1,240</div></div>
+        <div class="sticky o r1" style="padding:12px 14px"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-bolt"/></svg> Power</div><div class="val" style="font-size:26px">220<span class="unit" style="font-size:13px">/260</span></div></div>
+        <div class="sticky p r1" style="padding:12px 14px"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-heart"/></svg> Approval</div><div class="val" style="font-size:26px">62<span class="unit" style="font-size:13px">%</span></div></div>
+        <div class="sticky g r-1" style="padding:12px 14px"><div class="lbl"><svg class="ico" viewBox="0 0 24 24"><use href="#i-leaf"/></svg> Environ.</div><div class="val" style="font-size:26px">71<span class="unit" style="font-size:13px">%</span></div></div>
+      </div>
+      <div class="blueprint" style="margin-top:14px; padding:12px 14px; transform:rotate(0)">
+        <div class="bp-title" style="font-size:11px">◇ SITE PLAN · SECTOR 7</div>
+        <div class="stage" style="height:150px">
+          <svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet"><g class="rough" transform="translate(160,30)">
+            <polygon class="bp-tile" points="0,0 34,17 0,34 -34,17"/><polygon class="bp-tile water" points="-68,34 -34,51 -68,68 -102,51"/>
+            <polygon class="bp-tile sel" points="34,34 68,51 34,68 0,51"/><polygon class="bp-tile" points="-34,51 0,68 -34,85 -68,68"/>
+            <polygon class="bp-node" points="34,40 50,48 34,56 18,48" style="transform:translate(34px,17px)"/>
+          </g></svg>
+          <div class="hand" style="position:absolute; right:14px; top:60px; color:#ffd24a; font-size:16px; transform:rotate(-4deg)">build here!</div>
+        </div>
+      </div>
+      <button class="end-btn" style="font-size:22px; padding:14px 0; width:100%; margin-top:14px; display:block"><svg viewBox="0 0 360 60" preserveAspectRatio="none" class="rough"><rect x="4" y="4" width="352" height="52" rx="11" fill="rgba(158,210,255,.5)" stroke="#2f6db0" stroke-width="3.5"/></svg>END TURN ▶</button>
+    </div>
+  </div>
+</div>
+
+<div class="cornertag">DIRECTION: Planning Wall v2 · system — main · scorecard · shop · share · mobile</div>
+
+</body>
+</html>

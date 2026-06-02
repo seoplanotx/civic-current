@@ -9,11 +9,15 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Layers, Plus, Trash2, X, Cloud, HardDrive } from 'lucide-react';
 import { cloudSave } from '../cloud-save/CloudSaveService';
 import type { CloudSaveSlot } from '../shared/api-types';
 import { UpgradeModal } from '../billing/UpgradeModal';
 import { useGameStore } from '../store/useGameStore';
+import { CcIcon } from './PlanningWallDefs';
+
+// Alternating sticky-note paper colors + tilts for the saved-city slots.
+const SLOT_PAPERS = ['cc-y', 'cc-b', 'cc-g', 'cc-o', 'cc-p'];
+const SLOT_TILTS = ['cc-rot-1', 'cc-rot1', 'cc-rot-2', 'cc-rot2'];
 
 interface Props {
   open: boolean;
@@ -102,86 +106,95 @@ export const CitySlotPicker: React.FC<Props> = ({ open, onClose }) => {
   return (
     <>
       <div
-        className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        className="cc-backdrop animate-in fade-in duration-200"
         onClick={onClose}
       >
         <div
-          className="relative w-full max-w-[480px] bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col gap-4 max-h-[80vh]"
+          className="cc-sticky cc-white relative w-full max-w-[480px] max-h-[80vh] p-6 flex flex-col gap-4"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start justify-between">
+          <span className="cc-pin cc-pin-blue" />
+
+          {/* Header */}
+          <div className="flex items-start justify-between border-b border-[color:var(--cc-ink)]/10 pb-4">
             <div>
-              <div className="flex items-center gap-2 text-indigo-400">
-                <Layers className="w-4 h-4" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest">
-                  Your Cities
-                </span>
+              <div className="cc-label">
+                <CcIcon name="layers" solid className="text-[color:var(--cc-blue)]" />
+                Your Cities
               </div>
-              <h3 className="text-slate-100 font-black text-lg mt-1">
-                {source === 'cloud' ? 'Cloud Save' : 'Local Save'} · {slots.length}/{maxSlots}
+              <h3 className="cc-marker font-bold text-[28px] leading-none mt-2 text-[color:var(--cc-ink)]">
+                {source === 'cloud' ? 'Cloud Save' : 'Local Save'}
               </h3>
+              <p className="cc-hand text-[18px] text-[color:var(--cc-ink-soft)] mt-1 leading-snug">
+                {slots.length} of {maxSlots} city {maxSlots === 1 ? 'slot' : 'slots'} pinned to the wall.
+              </p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 shrink-0">
               <span
-                className="text-[10px] font-mono text-slate-500 flex items-center gap-1 px-2 py-1 border border-white/5 rounded-full"
+                className="cc-mono text-[10px] uppercase tracking-widest flex items-center gap-1.5 px-2 py-1 rounded-full border border-[color:var(--cc-ink)]/15 text-[color:var(--cc-ink-soft)]"
                 title={source === 'cloud' ? 'Synced across devices' : 'Saved on this device only'}
               >
-                {source === 'cloud' ? (
-                  <Cloud className="w-3 h-3" />
-                ) : (
-                  <HardDrive className="w-3 h-3" />
-                )}
+                <CcIcon name={source === 'cloud' ? 'cloud' : 'save'} className="text-[13px]" />
                 {source.toUpperCase()}
               </span>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors"
+                className="p-1.5 rounded-lg text-[color:var(--cc-ink-soft)] hover:text-[color:var(--cc-ink)] hover:bg-[color:var(--cc-ink)]/5 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <CcIcon name="x" className="text-[18px]" />
               </button>
             </div>
           </div>
 
           {/* Slot list */}
-          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-2 min-h-[120px]">
+          <div className="flex-1 overflow-y-auto px-1 pt-1 pb-1 custom-scrollbar flex flex-col gap-4 min-h-[120px]">
             {loading ? (
-              <div className="text-xs text-slate-500 italic text-center py-8">
+              <div className="cc-hand text-[20px] text-[color:var(--cc-ink-soft)] text-center py-8">
                 Loading…
               </div>
             ) : slots.length === 0 ? (
-              <div className="text-xs text-slate-500 italic text-center py-8">
+              <div className="cc-hand text-[20px] text-[color:var(--cc-ink-soft)] text-center py-8 leading-snug">
                 No saved cities yet. Save your current run below.
               </div>
             ) : (
-              slots.map((slot) => (
+              slots.map((slot, i) => (
                 <div
                   key={slot.id}
-                  className="bg-slate-950/40 border border-white/5 rounded-xl p-3 flex items-center justify-between"
+                  className={`cc-sticky ${SLOT_PAPERS[i % SLOT_PAPERS.length]} ${SLOT_TILTS[i % SLOT_TILTS.length]} relative p-4 flex items-center justify-between gap-3`}
                 >
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-xs font-extrabold text-slate-100">
+                  <span className="cc-pin" />
+                  <div className="flex flex-col leading-tight min-w-0">
+                    <span className="cc-marker font-bold text-[20px] leading-tight text-[color:var(--cc-ink)] truncate">
                       {slot.cityName}
                     </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">
+                    <span className="cc-mono text-[10px] uppercase tracking-wider text-[color:var(--cc-ink-soft)] mt-1">
                       {slot.turn !== undefined && `Turn ${slot.turn}`}
                       {slot.legacy !== undefined && ` · Legacy ${slot.legacy}`}
                       {' · '}
                       {new Date(slot.updatedAt).toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleLoad(slot.id)}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+                      className="cc-btn !text-[13px] !px-4 !py-2"
                     >
-                      Load
+                      <svg className="cc-btn-box cc-rough" viewBox="0 0 120 44" preserveAspectRatio="none">
+                        <rect x="4" y="4" width="112" height="36" rx="9" fill="rgba(47,109,176,0.10)" stroke="#2f6db0" strokeWidth="3" />
+                      </svg>
+                      <span className="cc-btn-label text-[color:var(--cc-blue)]">Load</span>
                     </button>
                     <button
                       onClick={() => handleDelete(slot.id)}
                       title="Delete"
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                      className="cc-btn !p-2"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <svg className="cc-btn-box cc-rough" viewBox="0 0 44 44" preserveAspectRatio="none">
+                        <rect x="4" y="4" width="36" height="36" rx="9" fill="rgba(216,65,47,0.10)" stroke="#d8412f" strokeWidth="3" />
+                      </svg>
+                      <span className="cc-btn-label text-[color:var(--cc-red)]">
+                        <CcIcon name="trash" className="text-[16px]" />
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -190,29 +203,34 @@ export const CitySlotPicker: React.FC<Props> = ({ open, onClose }) => {
           </div>
 
           {/* New slot input */}
-          <div className="pt-3 border-t border-white/5 flex flex-col gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+          <div className="pt-4 border-t border-[color:var(--cc-ink)]/10 flex flex-col gap-2">
+            <span className="cc-label text-[color:var(--cc-ink-soft)]">
               Save current run as a new city
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder={`City name (turn ${state.turn})`}
-                className="flex-1 bg-slate-950/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                className="flex-1 cc-marker bg-[#fbf9f2] border-2 border-[color:var(--cc-ink)]/20 rounded-lg px-3 py-2 text-[15px] text-[color:var(--cc-ink)] placeholder:text-[color:var(--cc-ink-soft)] placeholder:opacity-60 focus:outline-none focus:border-[color:var(--cc-green)]"
               />
               <button
                 onClick={atLimit ? () => setUpgradeOpen(true) : handleCreate}
                 disabled={creating || !newName.trim()}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 text-white text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 transition-all"
+                className="cc-btn !text-[14px] !px-4 !py-2 shrink-0"
               >
-                <Plus className="w-3 h-3" />
-                {atLimit ? 'Upgrade' : creating ? 'Saving…' : 'Save'}
+                <svg className="cc-btn-box cc-rough" viewBox="0 0 160 48" preserveAspectRatio="none">
+                  <rect x="4" y="4" width="152" height="40" rx="10" fill="rgba(46,139,87,0.10)" stroke="#2e8b57" strokeWidth="3.5" />
+                </svg>
+                <span className="cc-btn-label flex items-center gap-1.5 text-[color:var(--cc-green)]">
+                  <CcIcon name={atLimit ? 'coin' : 'build'} className="text-[15px]" />
+                  {atLimit ? 'Upgrade' : creating ? 'Saving…' : 'Save'}
+                </span>
               </button>
             </div>
             {error && (
-              <div className="text-[11px] text-red-300 bg-red-950/40 border border-red-500/30 rounded-lg p-2">
+              <div className="cc-marker text-[14px] text-[color:var(--cc-red)] bg-[rgba(216,65,47,0.08)] border-2 border-[color:var(--cc-red)]/30 rounded-lg p-2.5">
                 {error}
               </div>
             )}

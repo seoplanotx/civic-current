@@ -15,7 +15,7 @@ import type {
   DailyScoreBreakdown,
   DailyScoreSubmitRequest,
 } from '../shared/api-types';
-import { Trophy, Share2, Check, Loader2, Medal } from 'lucide-react';
+import { CcIcon } from './PlanningWallDefs';
 
 /**
  * Shown inside the ScoreCard when the finished run was today's Daily Challenge.
@@ -114,18 +114,17 @@ export const DailyLeaderboardPanel: React.FC = () => {
   const myServerId = board?.you?.entry.playerId;
 
   return (
-    <div className="mt-4 bg-slate-800/40 rounded-2xl p-4 border border-white/5">
+    <div className="cc-sticky cc-g cc-rot1 relative mt-5 p-4 self-stretch">
+      <span className="cc-pin cc-pin-green" />
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-amber-300">
-          <Trophy className="w-4 h-4" />
-          <span className="text-xs font-black uppercase tracking-widest">
-            Daily Challenge #{dailyChallengeNumber(new Date())}
-          </span>
+        <div className="cc-label text-[color:var(--cc-ink)]">
+          <CcIcon name="trophy" className="text-[color:var(--cc-blue)]" />
+          Daily Challenge #{dailyChallengeNumber(new Date())}
         </div>
         {board?.you && (
-          <span className="text-[11px] font-bold text-slate-300">
-            Your rank: <span className="text-amber-300">#{board.you.rank}</span>
-            <span className="text-slate-500"> / {board.total}</span>
+          <span className="cc-hand text-[18px] text-[color:var(--cc-ink-soft)]">
+            Your rank: <span className="text-[color:var(--cc-blue)] font-bold">#{board.you.rank}</span>
+            <span className="text-[color:var(--cc-ink-soft)]"> / {board.total}</span>
           </span>
         )}
       </div>
@@ -139,31 +138,29 @@ export const DailyLeaderboardPanel: React.FC = () => {
           onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
           maxLength={24}
           placeholder="Your name for the board"
-          className="flex-1 bg-slate-900/70 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50"
+          className="flex-1 cc-marker bg-white/60 border border-dashed border-[rgba(37,48,58,0.25)] rounded-lg px-3 py-2 text-[13px] text-[color:var(--cc-ink)] placeholder:text-[color:var(--cc-ink-soft)] focus:outline-none focus:border-[color:var(--cc-blue)]"
         />
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/90 hover:bg-amber-400 text-slate-900 text-xs font-extrabold transition-colors active:scale-[0.97]"
-        >
-          {shareLabel === 'Copied!' ? (
-            <Check className="w-3.5 h-3.5" />
-          ) : (
-            <Share2 className="w-3.5 h-3.5" />
-          )}
-          {shareLabel}
+        <button onClick={handleShare} className="cc-btn !px-3 !py-2 shrink-0">
+          <svg className="cc-btn-box cc-rough" viewBox="0 0 150 44" preserveAspectRatio="none">
+            <rect x="3" y="3" width="144" height="38" rx="8" fill="rgba(47,109,176,0.16)" stroke="#2f6db0" strokeWidth="3" />
+          </svg>
+          <span className="cc-btn-label flex items-center gap-1.5 text-[13px] text-[color:var(--cc-blue)]">
+            <CcIcon name={shareLabel === 'Copied!' ? 'check' : 'share'} className="w-3.5 h-3.5" />
+            {shareLabel}
+          </span>
         </button>
       </div>
 
       {/* Board */}
       {status === 'submitting' && (
-        <div className="flex items-center justify-center gap-2 py-4 text-slate-500 text-xs">
-          <Loader2 className="w-4 h-4 animate-spin" /> Loading leaderboard…
+        <div className="flex items-center justify-center gap-2 py-4 text-[color:var(--cc-ink-soft)] cc-hand text-[18px]">
+          <CcIcon name="clock" className="w-4 h-4 animate-spin" /> Loading leaderboard…
         </div>
       )}
 
       {status === 'offline' && (
-        <p className="text-center text-[11px] text-slate-500 py-3">
-          Leaderboard is offline — your score is saved locally and counts when you reconnect.
+        <p className="text-center cc-hand text-[17px] text-[color:var(--cc-ink-soft)] py-3">
+          Leaderboard's offline — your score is saved here and counts when you reconnect.
         </p>
       )}
 
@@ -175,19 +172,19 @@ export const DailyLeaderboardPanel: React.FC = () => {
               <li
                 key={entry.playerId}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs ${
-                  isMe ? 'bg-indigo-500/20 border border-indigo-400/30' : 'bg-slate-900/40'
+                  isMe ? 'bg-[color:var(--cc-blue)]/15 border border-[color:var(--cc-blue)]/35' : 'bg-white/45'
                 }`}
               >
-                <span className="w-6 text-center font-black text-slate-400">
-                  {idx === 0 ? <Medal className="w-3.5 h-3.5 inline text-amber-300" /> : idx + 1}
+                <span className="w-6 text-center cc-marker font-bold text-[color:var(--cc-ink-soft)]">
+                  {idx === 0 ? <CcIcon name="trophy" className="w-3.5 h-3.5 inline text-[color:var(--cc-blue)]" /> : idx + 1}
                 </span>
-                <span className="flex-1 truncate font-bold text-slate-200">
+                <span className="flex-1 truncate cc-marker font-bold text-[color:var(--cc-ink)]">
                   {entry.name}
                 </span>
-                <span className="text-slate-500 truncate max-w-[110px] hidden sm:inline">
+                <span className="cc-mono text-[10px] text-[color:var(--cc-ink-soft)] truncate max-w-[110px] hidden sm:inline">
                   {entry.title}
                 </span>
-                <span className="font-black text-white tabular-nums">{entry.legacy}</span>
+                <span className="cc-marker font-bold text-[color:var(--cc-ink)] tabular-nums">{entry.legacy}</span>
               </li>
             );
           })}
@@ -195,8 +192,8 @@ export const DailyLeaderboardPanel: React.FC = () => {
       )}
 
       {status === 'done' && board && board.entries.length === 0 && (
-        <p className="text-center text-[11px] text-slate-500 py-3">
-          You're the first to finish today's challenge. Share it and see who can beat you.
+        <p className="text-center cc-hand text-[17px] text-[color:var(--cc-ink-soft)] py-3">
+          You're the first to finish today's challenge — share it and see who can beat you!
         </p>
       )}
     </div>
